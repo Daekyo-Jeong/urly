@@ -111,10 +111,10 @@ function GridCard({ app, size = 96, selected, hovered, menuOpen, onSelect, onDou
       onDoubleClick={() => onDoubleClick?.(app.appId)}
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        // Tight tile so the squircle is the dominant visual — minimal padding
-        // around the icon, just enough breathing room for the label below.
-        gap: 8, padding: '8px 4px 10px', borderRadius: 10,
-        background: hovered && !selected ? T.cardBgHover : 'transparent',
+        // The squircle IS the tile. No card chrome around it — no padding, no
+        // background, no border-radius rectangle. Hover/selection live on the
+        // label below the icon, not on a card box around the icon.
+        gap: 8,
         position: 'relative', width: '100%', boxSizing: 'border-box',
         zIndex: menuOpen ? 5 : 'auto', cursor: 'default',
       }}
@@ -195,13 +195,6 @@ export default function GridView({ apps, onAction, title = 'All Apps' }) {
       onClick={e => { if (e.target === e.currentTarget) { setSelectedId(null); setMenuOpenId(null); } }}
       style={{ flex: 1, overflow: 'auto', padding: '20px 24px 32px' }}
     >
-      <div
-        onClick={e => { if (e.target === e.currentTarget) { setSelectedId(null); setMenuOpenId(null); } }}
-        style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}
-      >
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, letterSpacing: -0.4, color: T.text }}>{title}</h1>
-        <span style={{ fontSize: 12, color: T.textTertiary }}>Sorted by Name</span>
-      </div>
       <div
         onClick={e => { if (e.target === e.currentTarget) { setSelectedId(null); setMenuOpenId(null); } }}
         style={{
