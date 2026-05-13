@@ -14,16 +14,20 @@ const SQUIRCLE_PATH =
   'C 0 19.94 0.68 8.83 4.41 4.41 ' +
   'C 8.14 0 19.26 0 50 0 Z';
 
-// Apple's macOS app icon grid (Big Sur+):
-//   1024 px canvas, 820 px squircle centered, 102 px padding on each side
-//   (102/1024 ≈ 9.96%, so we use 10% in unit space).
-// We render the squircle at 80% of `size` so the shadow has room to render
-// inside the tile bounds and the icon looks the same scale as every other
-// app in the Dock. Without this padding our tiles read as oversized next
-// to native macOS icons.
-const PAD = 12.5;          // each side, in viewBox units
+// Sizing context — important: this is the *manager UI* squircle, not the
+// macOS app-icon file. Two different jobs:
+//   • assets/icon-source.svg ships in each generated .app's app.icns and
+//     follows Apple's official 820/1024 grid (≈10% padding around the
+//     squircle for the system-painted shadow). That file is what Dock,
+//     Finder, and Spotlight display.
+//   • This component renders the small previews in the manager grid/list.
+//     There it acts as a visual identifier among many siblings, so we fill
+//     the card edge-to-edge — auto-extracted favicons already include their
+//     own designer-supplied breathing room, and adding a second margin made
+//     each tile read as a tiny logo floating in whitespace.
+const PAD = 0;             // no outer padding in manager UI
 const SQ_BOX = 100;        // squircle is drawn at 100×100 viewBox coords
-const VB = SQ_BOX + PAD * 2; // 125
+const VB = SQ_BOX + PAD * 2;
 
 // Renders a continuous-corner (Apple HIG squircle) tile.
 // - `image` (URL) — rendered as an SVG <image> clipped to the squircle so the
