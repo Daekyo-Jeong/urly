@@ -93,7 +93,7 @@ function GridCardMenu({ app, onAction, anchorRect }) {
   return createPortal(menuEl, document.body);
 }
 
-function GridCard({ app, size = 72, selected, hovered, menuOpen, onSelect, onDoubleClick, onMenuToggle, onAction }) {
+function GridCard({ app, size = 96, selected, hovered, menuOpen, onSelect, onDoubleClick, onMenuToggle, onAction }) {
   const menuBtnRef = useRef(null);
   const [anchorRect, setAnchorRect] = useState(null);
 
@@ -111,7 +111,9 @@ function GridCard({ app, size = 72, selected, hovered, menuOpen, onSelect, onDou
       onDoubleClick={() => onDoubleClick?.(app.appId)}
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        gap: 10, padding: '14px 10px', borderRadius: 10,
+        // Tight tile so the squircle is the dominant visual — minimal padding
+        // around the icon, just enough breathing room for the label below.
+        gap: 8, padding: '8px 4px 10px', borderRadius: 10,
         background: hovered && !selected ? T.cardBgHover : 'transparent',
         position: 'relative', width: '100%', boxSizing: 'border-box',
         zIndex: menuOpen ? 5 : 'auto', cursor: 'default',
@@ -204,7 +206,10 @@ export default function GridView({ apps, onAction, title = 'All Apps' }) {
         onClick={e => { if (e.target === e.currentTarget) { setSelectedId(null); setMenuOpenId(null); } }}
         style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+        // Cell size sits just slightly over the icon (96 px) + label gutter, so
+        // the squircle dominates the tile the way Apple's App Icon Template
+        // does in 13:131 — minimal whitespace inside each card.
+        gridTemplateColumns: 'repeat(auto-fill, minmax(112px, 1fr))',
         gap: 4,
         justifyContent: 'start',
       }}>
@@ -212,11 +217,11 @@ export default function GridView({ apps, onAction, title = 'All Apps' }) {
           <div key={app.appId}
             onMouseEnter={() => setHoveredId(app.appId)}
             onMouseLeave={() => setHoveredId(null)}
-            style={{ maxWidth: 160, minWidth: 0 }}
+            style={{ maxWidth: 128, minWidth: 0 }}
           >
             <GridCard
               app={app}
-              size={72}
+              size={96}
               selected={selectedId === app.appId}
               hovered={hoveredId === app.appId}
               menuOpen={menuOpenId === app.appId}
