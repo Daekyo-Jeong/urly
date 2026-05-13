@@ -63,8 +63,35 @@ function saveCatalog(catalog) {
   fs.writeFileSync(CATALOG_INDEX, JSON.stringify(catalog, null, 2));
 }
 
-function slugify(name) {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+// Derive a filesystem-safe identifier from the app name. The fallback chain
+// matters: an app called "일주일 개인 근무시간 관리" would otherwise produce
+// an empty slug, which then becomes a wildcard for every downstream path
+// (config.json, icon.png, Info.plist's CatalogAppID, the .app bundle
+// directory) and breaks launch.
+function slugify(name, url) {
+  // Step 1: keep ASCII alphanumerics from the name itself.
+  const fromName = String(name || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+  if (fromName) return fromName;
+
+  // Step 2: derive from the URL's host + path. Strips protocol and trailing
+  // slashes, then squashes everything else the same way.
+  if (url) {
+    try {
+      const u = new URL(url.startsWith('http') ? url : `https://${url}`);
+      const fromUrl = (u.hostname + u.pathname)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+      if (fromUrl) return fromUrl;
+    } catch {}
+  }
+
+  // Step 3: last resort — random 8-char id. Ensures we never write to the
+  // apps/ root and never produce a bundle whose CatalogAppID is empty.
+  return 'app-' + require('crypto').randomBytes(4).toString('hex');
 }
 
 function createPlaceholderIcon(destPath) {
