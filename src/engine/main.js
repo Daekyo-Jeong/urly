@@ -447,9 +447,15 @@ function createWindow(config, appId) {
   const chromeVersion = (process.versions.chrome || '126.0.0.0').split('.').slice(0, 4).join('.');
   const cleanUa = `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${chromeVersion} Safari/537.36`;
   win.webContents.setUserAgent(cleanUa);
-  // Session-wide too, so popups, subresource fetches, and any future windows
-  // share the same UA without needing per-window setup.
-  win.webContents.session.setUserAgent(cleanUa);
+
+  // Default the SSB to Korean: this single call sets BOTH the Accept-Language
+  // HTTP header (used server-side for content negotiation, e.g., GitHub,
+  // Slack, X serve Korean translations) and what JS sees in `navigator.language`
+  // / `navigator.languages` (used by Notion, ChatGPT, etc. that switch locale
+  // client-side). Apply at the session level so popups and subresource
+  // requests inherit it without per-window setup.
+  const acceptLanguages = 'ko-KR,ko;q=0.9,en-US;q=0.7,en;q=0.5';
+  win.webContents.session.setUserAgent(cleanUa, acceptLanguages);
 
   win.loadURL(config.url);
 
