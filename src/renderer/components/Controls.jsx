@@ -7,7 +7,7 @@ export function SearchField({ value = '', onChange, placeholder = 'Search', widt
     <div style={{
       display: 'flex', alignItems: 'center', gap: 5,
       height: 24, width, padding: '0 6px',
-      background: '#fff',
+      background: T.inputBg,
       borderRadius: 6,
       boxShadow: focused
         ? `inset 0 0 0 0.5px ${T.sepStrong}, 0 0 0 3px ${T.accentMuted}, 0 0 0 1.5px ${T.accent}`
@@ -41,7 +41,7 @@ export function SegmentedControl({ items, value, onChange }) {
   return (
     <div style={{
       display: 'inline-flex', height: 24, padding: 2, gap: 2,
-      background: 'rgba(0,0,0,0.06)',
+      background: T.controlTrack,
       borderRadius: 6,
     }}>
       {items.map(it => {
@@ -50,9 +50,9 @@ export function SegmentedControl({ items, value, onChange }) {
           <div key={it.value} onClick={() => onChange?.(it.value)} style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             padding: '0 8px', height: 20, minWidth: 24,
-            background: sel ? '#fff' : 'transparent',
+            background: sel ? T.controlActive : 'transparent',
             borderRadius: 4,
-            boxShadow: sel ? '0 0.5px 1.5px rgba(0,0,0,0.18), 0 0 0 0.5px rgba(0,0,0,0.06)' : 'none',
+            boxShadow: sel ? T.controlActiveShadow : 'none',
             color: sel ? T.text : T.textSecondary,
             cursor: 'default',
           }}>

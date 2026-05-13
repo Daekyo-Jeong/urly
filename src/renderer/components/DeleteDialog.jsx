@@ -34,7 +34,7 @@ export default function DeleteDialog({ app, onClose, onDeleted }) {
     }} onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
       <div style={{
         width: 460,
-        background: '#f6f6f6',
+        background: T.modalBg,
         borderRadius: 10,
         boxShadow: '0 0 0 0.5px rgba(0,0,0,0.18), 0 30px 80px rgba(0,0,0,0.4)',
         overflow: 'hidden',
@@ -66,7 +66,7 @@ export default function DeleteDialog({ app, onClose, onDeleted }) {
 
           <div style={{
             textAlign: 'left',
-            background: '#fff',
+            background: T.inputBg,
             borderRadius: 8,
             boxShadow: `inset 0 0 0 0.5px ${T.sepStrong}`,
             marginBottom: 4,
@@ -80,7 +80,7 @@ export default function DeleteDialog({ app, onClose, onDeleted }) {
             }}>
               <div style={{
                 width: 16, height: 16, borderRadius: 4,
-                background: !keepUserData ? T.red : '#fff',
+                background: !keepUserData ? T.red : 'transparent',
                 boxShadow: !keepUserData ? 'none' : `inset 0 0 0 1px ${T.sepStrong}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: '#fff', marginTop: 1, flexShrink: 0,
@@ -101,7 +101,7 @@ export default function DeleteDialog({ app, onClose, onDeleted }) {
             }}>
               <div style={{
                 width: 16, height: 16, borderRadius: 4,
-                background: keepUserData ? T.red : '#fff',
+                background: keepUserData ? T.red : 'transparent',
                 boxShadow: keepUserData ? 'none' : `inset 0 0 0 1px ${T.sepStrong}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: '#fff', marginTop: 1, flexShrink: 0,

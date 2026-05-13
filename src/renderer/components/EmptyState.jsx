@@ -47,7 +47,7 @@ export default function EmptyState({ onNewApp }) {
         ].map(h => (
           <div key={h.t} style={{
             display: 'flex', alignItems: 'center', gap: 6,
-            padding: '6px 10px', background: '#fff', borderRadius: 6,
+            padding: '6px 10px', background: T.inputBg, borderRadius: 6,
             boxShadow: `inset 0 0 0 0.5px ${T.sep}`,
             color: T.textSecondary,
           }}>

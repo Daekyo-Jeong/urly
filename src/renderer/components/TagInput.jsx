@@ -41,7 +41,7 @@ export default function TagInput({ value = [], onChange, suggestions = [] }) {
         style={{
           display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 4,
           minHeight: 28, padding: '3px 6px',
-          background: '#fff',
+          background: T.inputBg,
           borderRadius: 6,
           boxShadow: focused
             ? `inset 0 0 0 0.5px ${T.sepStrong}, 0 0 0 3px ${T.accentMuted}, 0 0 0 1.5px ${T.accent}`
@@ -85,7 +85,7 @@ export default function TagInput({ value = [], onChange, suggestions = [] }) {
         <div style={{
           position: 'absolute', top: '100%', left: 0, right: 0,
           marginTop: 4, padding: 4,
-          background: 'rgba(252,252,252,0.96)',
+          background: T.popoverBg,
           backdropFilter: 'blur(20px) saturate(180%)',
           borderRadius: 6,
           boxShadow: '0 0 0 0.5px rgba(0,0,0,0.14), 0 8px 24px rgba(0,0,0,0.18)',

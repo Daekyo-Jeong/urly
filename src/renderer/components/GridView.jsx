@@ -60,7 +60,7 @@ function GridCardMenu({ app, onAction, anchorRect }) {
   const menuEl = (
     <div ref={menuRef} style={{
       position: 'fixed', top: pos.top, left: pos.left, visibility: pos.visibility,
-      background: 'rgba(252,252,252,0.96)',
+      background: T.popoverBg,
       backdropFilter: 'blur(28px) saturate(180%)',
       WebkitBackdropFilter: 'blur(28px) saturate(180%)',
       borderRadius: 8,

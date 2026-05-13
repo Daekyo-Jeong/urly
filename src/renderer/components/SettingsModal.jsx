@@ -3,6 +3,7 @@ import { T } from '../tokens';
 import Icon from './Icon';
 import { Btn } from './Controls';
 import { ACCENT_PRESETS, applyAccent } from '../accent';
+import { applyTheme, THEME_MODES } from '../theme';
 
 export default function SettingsModal({ settings, onClose, onChange, tagsWithCounts = {}, onTagsChanged }) {
   const [local, setLocal] = useState(settings);
@@ -16,6 +17,7 @@ export default function SettingsModal({ settings, onClose, onChange, tagsWithCou
     const next = { ...local, ...patch, sidebar: { ...local.sidebar, ...(patch.sidebar || {}) } };
     setLocal(next);
     if (patch.accentColor) applyAccent(patch.accentColor);
+    if (patch.theme) applyTheme(patch.theme);
     onChange?.(next);
   };
 
@@ -29,7 +31,7 @@ export default function SettingsModal({ settings, onClose, onChange, tagsWithCou
     }} onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
       <div style={{
         width: 480,
-        background: '#f6f6f6',
+        background: T.modalBg,
         borderRadius: 10,
         boxShadow: '0 0 0 0.5px rgba(0,0,0,0.18), 0 30px 80px rgba(0,0,0,0.4)',
         overflow: 'hidden',
@@ -37,13 +39,46 @@ export default function SettingsModal({ settings, onClose, onChange, tagsWithCou
         <div style={{
           padding: '14px 20px 12px',
           borderBottom: `0.5px solid ${T.sep}`,
-          background: '#fafaf9',
+          background: T.modalHeaderBg,
           textAlign: 'center',
         }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>Settings</div>
         </div>
 
         <div style={{ padding: '20px 22px 18px' }}>
+          {/* Appearance */}
+          <Section title="Appearance">
+            <div style={{ display: 'flex', gap: 6 }}>
+              {THEME_MODES.map(mode => {
+                const selected = (local.theme || 'auto') === mode;
+                return (
+                  <div
+                    key={mode}
+                    onClick={() => update({ theme: mode })}
+                    style={{
+                      flex: 1,
+                      padding: '12px 8px',
+                      borderRadius: 6,
+                      background: selected ? T.accentMuted : 'transparent',
+                      boxShadow: selected
+                        ? `inset 0 0 0 1.5px ${T.accent}`
+                        : `inset 0 0 0 0.5px ${T.sepStrong}`,
+                      cursor: 'default',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <ThemeSwatch mode={mode} />
+                    <div style={{
+                      marginTop: 8, fontSize: 12, fontWeight: 500,
+                      color: selected ? T.accent : T.text,
+                      textTransform: 'capitalize',
+                    }}>{mode}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </Section>
+
           {/* Accent color */}
           <Section title="Accent Color">
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
@@ -79,7 +114,7 @@ export default function SettingsModal({ settings, onClose, onChange, tagsWithCou
                 }}
                 style={{
                   height: 24, padding: '0 8px', width: 100,
-                  background: '#fff', border: 'none', outline: 'none',
+                  background: T.inputBg, border: 'none', outline: 'none',
                   borderRadius: 5, fontFamily: T.fontMono, fontSize: 11.5,
                   boxShadow: `inset 0 0 0 0.5px ${T.sepStrong}`,
                   color: T.text,
@@ -153,7 +188,7 @@ export default function SettingsModal({ settings, onClose, onChange, tagsWithCou
                         onBlur={() => setRenamingTag(null)}
                         style={{
                           flex: 1, height: 22, padding: '0 6px',
-                          background: '#fff', border: 'none', outline: 'none',
+                          background: T.inputBg, border: 'none', outline: 'none',
                           borderRadius: 4, fontSize: 12.5, color: T.text,
                           fontFamily: T.font,
                           boxShadow: `inset 0 0 0 0.5px ${T.accent}, 0 0 0 2px ${T.accentMuted}`,
@@ -174,7 +209,7 @@ export default function SettingsModal({ settings, onClose, onChange, tagsWithCou
                             width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
                             borderRadius: 4, color: T.textSecondary, cursor: 'default',
                           }}
-                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.06)'}
+                          onMouseEnter={e => e.currentTarget.style.background = T.controlTrack}
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                         >
                           <Icon name="pencil" size={11} strokeWidth={1.7} />
@@ -210,12 +245,49 @@ export default function SettingsModal({ settings, onClose, onChange, tagsWithCou
         <div style={{
           padding: '12px 16px',
           borderTop: `0.5px solid ${T.sep}`,
-          background: '#fafaf9',
+          background: T.modalHeaderBg,
           display: 'flex', justifyContent: 'flex-end',
         }}>
           <Btn kind="primary" onClick={onClose}>Done</Btn>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Tiny 56×40 desktop / sidebar / content preview that reads at a glance which
+// mode an option represents. The 'auto' variant splits diagonally so users
+// understand it follows the OS.
+function ThemeSwatch({ mode }) {
+  const light = { sidebar: '#f1f0ee', content: '#ffffff', sep: 'rgba(0,0,0,0.10)' };
+  const dark = { sidebar: '#2a2a2c', content: '#1c1c1e', sep: 'rgba(255,255,255,0.10)' };
+
+  const render = (palette) => (
+    <>
+      <div style={{ width: 14, background: palette.sidebar, borderRight: `0.5px solid ${palette.sep}` }} />
+      <div style={{ flex: 1, background: palette.content }} />
+    </>
+  );
+
+  return (
+    <div style={{
+      width: 56, height: 36, margin: '0 auto',
+      borderRadius: 5, overflow: 'hidden',
+      boxShadow: 'inset 0 0 0 0.5px rgba(0,0,0,0.16)',
+      display: 'flex', position: 'relative',
+    }}>
+      {mode === 'auto' ? (
+        <>
+          <div style={{ display: 'flex', flex: 1, clipPath: 'polygon(0 0, 100% 0, 0 100%)', position: 'absolute', inset: 0 }}>
+            {render(light)}
+          </div>
+          <div style={{ display: 'flex', flex: 1, clipPath: 'polygon(100% 0, 100% 100%, 0 100%)', position: 'absolute', inset: 0 }}>
+            {render(dark)}
+          </div>
+        </>
+      ) : (
+        render(mode === 'dark' ? dark : light)
+      )}
     </div>
   );
 }
@@ -228,7 +300,7 @@ function Section({ title, children }) {
         textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8,
       }}>{title}</div>
       <div style={{
-        background: '#fff', borderRadius: 8,
+        background: T.inputBg, borderRadius: 8,
         boxShadow: `inset 0 0 0 0.5px ${T.sepStrong}`,
         padding: '12px 14px',
       }}>
@@ -258,7 +330,7 @@ function ToggleRow({ label, hint, value, onChange }) {
         }}
       >
         <div style={{
-          width: 16, height: 16, borderRadius: 8, background: '#fff',
+          width: 16, height: 16, borderRadius: 8, background: T.inputBg,
           boxShadow: '0 0.5px 0 rgba(0,0,0,0.18), 0 1px 2px rgba(0,0,0,0.12)',
           transform: value ? 'translateX(14px)' : 'translateX(0)',
           transition: 'transform 0.15s',

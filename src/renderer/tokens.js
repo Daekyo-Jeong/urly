@@ -1,35 +1,56 @@
+// Design tokens. Every color resolves through a CSS variable so theme.js can
+// swap the light/dark palette at runtime (and respond to system changes for
+// the 'auto' theme mode) with no per-component changes.
+
 export const T = {
   font: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", sans-serif',
   fontMono: '"SF Mono", ui-monospace, Menlo, Consolas, monospace',
 
-  desktop: 'linear-gradient(140deg, #d6cfc4 0%, #b8a99a 100%)',
-  windowBg: '#ffffff',
-  contentBg: '#f5f5f5',
-  sidebarBg: 'rgba(241, 240, 238, 0.86)',
-  toolbarBg: 'rgba(246, 246, 246, 0.92)',
-  cardBg: '#ffffff',
-  cardBgHover: '#f7f7f7',
+  // Surfaces
+  desktop: 'var(--cat-desktop)',
+  windowBg: 'var(--cat-window-bg)',
+  contentBg: 'var(--cat-content-bg)',
+  sidebarBg: 'var(--cat-sidebar-bg)',
+  toolbarBg: 'var(--cat-toolbar-bg)',
+  cardBg: 'var(--cat-card-bg)',
+  cardBgHover: 'var(--cat-card-bg-hover)',
 
-  text: 'rgba(0,0,0,0.85)',
-  textSecondary: 'rgba(0,0,0,0.56)',
-  textTertiary: 'rgba(0,0,0,0.36)',
-  textQuaternary: 'rgba(0,0,0,0.22)',
+  inputBg: 'var(--cat-input-bg)',
+  popoverBg: 'var(--cat-popover-bg)',
+  modalBg: 'var(--cat-modal-bg)',
+  modalHeaderBg: 'var(--cat-modal-header-bg)',
+  overlay: 'var(--cat-overlay)',
 
-  sep: 'rgba(0,0,0,0.08)',
-  sepStrong: 'rgba(0,0,0,0.14)',
+  // Text
+  text: 'var(--cat-text)',
+  textSecondary: 'var(--cat-text-secondary)',
+  textTertiary: 'var(--cat-text-tertiary)',
+  textQuaternary: 'var(--cat-text-quaternary)',
 
-  // Accent — backed by CSS variables so settings can swap at runtime.
+  // Separators
+  sep: 'var(--cat-sep)',
+  sepStrong: 'var(--cat-sep-strong)',
+
+  // Accent (driven separately by accent.js)
   accent: 'var(--cat-accent)',
   accentHover: 'var(--cat-accent-hover)',
   accentMuted: 'var(--cat-accent-muted)',
 
-  red: '#FF3B30',
-  redBg: 'rgba(255, 59, 48, 0.10)',
-  green: '#34C759',
-  blue: '#0A84FF',
+  // Semantic colors
+  red: 'var(--cat-red)',
+  redBg: 'var(--cat-red-bg)',
+  green: 'var(--cat-green)',
+  blue: 'var(--cat-blue)',
 
+  // Controls
+  controlTrack: 'var(--cat-control-track)',
+  controlActive: 'var(--cat-control-active)',
+  controlActiveShadow: 'var(--cat-control-active-shadow)',
+  placeholder: 'var(--cat-placeholder)',
+
+  // Traffic lights — same hue in both modes; only the border ring changes.
   tlRed: '#FF5F57',
   tlYellow: '#FEBC2E',
   tlGreen: '#28C840',
-  tlBorder: 'rgba(0,0,0,0.12)',
+  tlBorder: 'var(--cat-tl-border)',
 };

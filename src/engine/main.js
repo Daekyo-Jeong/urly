@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, nativeImage, Menu, MenuItem, ipcMain, protocol, net } = require('electron');
+const { app, BrowserWindow, shell, nativeImage, Menu, MenuItem, ipcMain, protocol, net, nativeTheme } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { execFile } = require('child_process');
@@ -437,6 +437,7 @@ const INSTALL_DIR = '/Applications/Catalog Apps';
 
 const DEFAULT_SETTINGS = {
   accentColor: '#FF6B35',
+  theme: 'auto', // 'auto' | 'light' | 'dark'
   sidebar: {
     recentlyAdded: true,
     favorites: true,
@@ -838,6 +839,9 @@ function setupCatalogIPC() {
       sidebar: { ...current.sidebar, ...(patch?.sidebar || {}) },
     };
     saveSettings(next);
+    if (patch && patch.theme) {
+      nativeTheme.themeSource = patch.theme === 'auto' ? 'system' : patch.theme;
+    }
     return next;
   });
 }
@@ -1196,6 +1200,15 @@ if (!appId) {
   // Catalog Manager mode
   app.whenReady().then(() => {
     app.setName('Catalog');
+
+    // Apply the user's saved theme to the window chrome (traffic light area,
+    // sidebar vibrancy) immediately. The React renderer applies the same
+    // preference to its own surfaces via theme.js — both stay in sync.
+    try {
+      const s = loadSettings();
+      nativeTheme.themeSource = (s.theme || 'auto') === 'auto' ? 'system' : s.theme;
+    } catch {}
+
     // Serve `catalog-icon://app/{appId}` from the per-app icon file.
     protocol.handle('catalog-icon', (req) => {
       try {
@@ -1249,6 +1262,15 @@ if (!appId) {
   app.whenReady().then(() => {
     try {
       const config = loadAppConfig(appId);
+
+      // Follow the user's Catalog-wide theme preference. 'auto' lets macOS
+      // decide and updates live when the OS toggles between light/dark.
+      // Stubs share the same settings.json as the manager.
+      try {
+        const settings = loadSettings();
+        const mode = settings.theme || 'auto';
+        nativeTheme.themeSource = mode === 'auto' ? 'system' : mode;
+      } catch {}
 
       app.setName(config.name);
 

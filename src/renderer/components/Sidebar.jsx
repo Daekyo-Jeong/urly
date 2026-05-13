@@ -64,7 +64,7 @@ export default function Sidebar({ active, counts = {}, tagCounts = {}, settings,
             width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
             borderRadius: 5, color: T.textSecondary, cursor: 'default',
           }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.06)'}
+          onMouseEnter={e => e.currentTarget.style.background = T.controlTrack}
           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
         >
           <SettingsGear />

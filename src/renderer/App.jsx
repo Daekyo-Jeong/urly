@@ -10,6 +10,7 @@ import DeleteDialog from './components/DeleteDialog';
 import Toast from './components/Toast';
 import SettingsModal from './components/SettingsModal';
 import { applyAccent, DEFAULT_ACCENT } from './accent';
+import { applyTheme, DEFAULT_THEME } from './theme';
 
 if (!window.catalog) {
   const MOCK_APPS = [
@@ -26,6 +27,7 @@ if (!window.catalog) {
   ];
   let MOCK_SETTINGS = {
     accentColor: DEFAULT_ACCENT,
+    theme: DEFAULT_THEME,
     sidebar: { recentlyAdded: true, favorites: true, tags: true, removed: false },
   };
   window.catalog = {
@@ -83,8 +85,9 @@ export default function App() {
       const s = await window.catalog.getSettings();
       setSettings(s);
       applyAccent(s.accentColor || DEFAULT_ACCENT);
+      applyTheme(s.theme || DEFAULT_THEME);
     } catch {
-      setSettings({ accentColor: DEFAULT_ACCENT, sidebar: { recentlyAdded: true, favorites: true, tags: true, removed: false } });
+      setSettings({ accentColor: DEFAULT_ACCENT, theme: DEFAULT_THEME, sidebar: { recentlyAdded: true, favorites: true, tags: true, removed: false } });
     }
   }, []);
 
@@ -204,6 +207,7 @@ export default function App() {
   const handleSettingsChange = useCallback(async (next) => {
     setSettings(next);
     if (next.accentColor) applyAccent(next.accentColor);
+    if (next.theme) applyTheme(next.theme);
     await window.catalog.saveSettings(next);
   }, []);
 

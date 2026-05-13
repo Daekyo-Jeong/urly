@@ -38,7 +38,7 @@ export default function ListView({ apps, onAction }) {
       {/* Column headers */}
       <div style={{
         display: 'flex', height: 24, flexShrink: 0,
-        background: '#f0eee9',
+        background: T.contentBg,
         borderBottom: `0.5px solid ${T.sep}`,
         padding: '0 16px',
         fontSize: 11, fontWeight: 600, color: T.textSecondary,
@@ -67,7 +67,7 @@ export default function ListView({ apps, onAction }) {
               style={{
                 display: 'flex', alignItems: 'center', height: 32,
                 padding: '0 16px',
-                background: sel ? T.accent : (alt ? '#fafaf9' : '#fff'),
+                background: sel ? T.accent : (alt ? T.modalHeaderBg : T.windowBg),
                 color: sel ? '#fff' : T.text,
                 fontSize: 12.5,
                 borderBottom: `0.5px solid ${T.sep}`,
@@ -90,7 +90,7 @@ export default function ListView({ apps, onAction }) {
                   <span key={tag} style={{
                     display: 'inline-block', padding: '1px 6px', borderRadius: 4,
                     fontSize: 10.5, fontWeight: 500,
-                    background: sel ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.05)',
+                    background: sel ? 'rgba(255,255,255,0.18)' : T.controlTrack,
                     color: sel ? '#fff' : T.textSecondary,
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                     maxWidth: 60,
@@ -118,7 +118,7 @@ export default function ListView({ apps, onAction }) {
         <div style={{
           height: 84, flexShrink: 0,
           borderTop: `0.5px solid ${T.sep}`,
-          background: '#fafaf9',
+          background: T.modalHeaderBg,
           padding: '12px 16px',
           display: 'flex', alignItems: 'center', gap: 14,
         }}>

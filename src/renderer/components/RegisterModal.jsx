@@ -15,7 +15,7 @@ function ModalOverlay({ children, onClose }) {
     }} onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
       <div style={{
         width: 460,
-        background: '#f6f6f6',
+        background: T.modalBg,
         borderRadius: 10,
         boxShadow: '0 0 0 0.5px rgba(0,0,0,0.18), 0 30px 80px rgba(0,0,0,0.4)',
         overflow: 'hidden',
@@ -31,7 +31,7 @@ function ModalHeader({ title, subtitle }) {
     <div style={{
       padding: '14px 20px 12px',
       borderBottom: `0.5px solid ${T.sep}`,
-      background: '#fafaf9',
+      background: T.modalHeaderBg,
       textAlign: 'center',
     }}>
       <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{title}</div>
@@ -45,7 +45,7 @@ function ModalFooter({ children }) {
     <div style={{
       padding: '12px 16px',
       borderTop: `0.5px solid ${T.sep}`,
-      background: '#fafaf9',
+      background: T.modalHeaderBg,
       display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8,
     }}>
       {children}
@@ -76,7 +76,7 @@ function TextInput({ value, onChange, onBlur, placeholder, mono, autoFocus }) {
       autoFocus={autoFocus}
       style={{
         width: '100%', height: 28, padding: '0 8px',
-        background: '#fff', border: 'none', outline: 'none',
+        background: T.inputBg, border: 'none', outline: 'none',
         borderRadius: 6,
         boxShadow: `inset 0 0 0 0.5px ${T.sepStrong}, inset 0 1px 0 rgba(0,0,0,0.03)`,
         fontSize: mono ? 12.5 : 13,
@@ -184,7 +184,7 @@ export default function RegisterModal({ onClose, onCreated, editApp = null, allT
                 <div style={{
                   position: 'absolute', bottom: -2, right: -2,
                   width: 24, height: 24, borderRadius: 12,
-                  background: '#fff',
+                  background: T.inputBg,
                   boxShadow: '0 0.5px 0 rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.18)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: T.text,
@@ -237,14 +237,14 @@ export default function RegisterModal({ onClose, onCreated, editApp = null, allT
           style={{
             display: 'flex', alignItems: 'center', gap: 10,
             padding: '10px 12px', borderRadius: 6,
-            background: 'rgba(0,0,0,0.025)',
+            background: T.controlTrack,
             fontSize: 12, color: T.textSecondary,
             cursor: 'default', marginBottom: 14,
           }}
         >
           <div style={{
             width: 14, height: 14, borderRadius: 3,
-            background: favorite ? T.accent : '#fff',
+            background: favorite ? T.accent : 'transparent',
             boxShadow: favorite ? 'none' : `inset 0 0 0 1px ${T.sepStrong}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: '#fff', flexShrink: 0,
