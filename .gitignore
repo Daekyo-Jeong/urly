@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Generated icon (regenerated via `npm run build:icon`)
+assets/icon.icns
+assets/icon.png
+assets/icon.svg
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*~
+
+# Logs
+*.log
+npm-debug.log*
+
+# Local environment
+.env
+.env.local

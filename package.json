@@ -1,0 +1,72 @@
+{
+  "name": "catalog",
+  "version": "0.1.0",
+  "description": "Site-Specific Browser Generator for macOS",
+  "main": "src/engine/main.js",
+  "scripts": {
+    "dev": "VITE_DEV_SERVER=1 vite & sleep 1 && electron .",
+    "dev:vite": "vite",
+    "dev:electron": "VITE_DEV_SERVER=1 electron .",
+    "build:icon": "node scripts/build-icon.js",
+    "build:renderer": "vite build",
+    "build:app": "npm run build:renderer && electron-builder --mac --arm64 -c.mac.identity=null",
+    "build": "npm run build:app",
+    "generate": "node src/generator/create-app.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.1",
+    "electron": "^42.0.1",
+    "electron-builder": "^26.8.1",
+    "vite": "^8.0.12"
+  },
+  "dependencies": {
+    "plist": "^3.1.1",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
+  },
+  "build": {
+    "appId": "app.catalog.manager",
+    "productName": "Catalog",
+    "copyright": "Catalog — personal use",
+    "directories": {
+      "output": "dist/build"
+    },
+    "files": [
+      "src/engine/**/*",
+      "src/generator/**/*",
+      "src/renderer/preload.js",
+      "dist/renderer/**/*",
+      "assets/icon.icns",
+      "node_modules/plist/**/*",
+      "node_modules/xmlbuilder/**/*",
+      "node_modules/xmldom/**/*",
+      "node_modules/base64-js/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["arm64"]
+        }
+      ],
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "identity": null,
+      "icon": "assets/icon.icns"
+    },
+    "dmg": {
+      "title": "Catalog ${version}",
+      "contents": [
+        { "x": 130, "y": 220, "type": "file" },
+        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+      ]
+    }
+  }
+}

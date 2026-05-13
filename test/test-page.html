@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head><title>Catalog Browser Test</title>
+<style>
+  body { font-family: -apple-system, sans-serif; max-width: 600px; margin: 40px auto; }
+  .section { margin: 20px 0; padding: 16px; border: 1px solid #ddd; border-radius: 8px; }
+  h2 { margin-top: 0; }
+  button { padding: 8px 16px; margin: 4px; cursor: pointer; }
+  a { display: block; margin: 4px 0; }
+  #notification-result, #download-result { margin-top: 8px; color: green; }
+</style>
+</head>
+<body>
+  <h1>Catalog Browser Test</h1>
+
+  <div class="section">
+    <h2>1. External Link Test</h2>
+    <a href="https://www.naver.com" target="_blank">Open Naver (should open in system browser)</a>
+    <a href="https://stackoverflow.com">Open StackOverflow (should open in system browser)</a>
+  </div>
+
+  <div class="section">
+    <h2>2. Notification Test</h2>
+    <button onclick="testNotification()">Send Notification</button>
+    <div id="notification-result"></div>
+  </div>
+
+  <div class="section">
+    <h2>3. Download Test</h2>
+    <button onclick="testDownload()">Download Test File</button>
+    <div id="download-result"></div>
+  </div>
+
+  <div class="section">
+    <h2>4. Clipboard Test</h2>
+    <p>Try right-click → Copy on this text, then paste somewhere.</p>
+    <input type="text" placeholder="Paste here to verify" style="width: 100%; padding: 8px;">
+  </div>
+
+  <div class="section">
+    <h2>5. File Upload Test</h2>
+    <input type="file" id="fileInput">
+    <div id="upload-result"></div>
+  </div>
+
+  <script>
+    async function testNotification() {
+      const perm = await Notification.requestPermission();
+      document.getElementById('notification-result').textContent = 'Permission: ' + perm;
+      if (perm === 'granted') {
+        new Notification('Catalog Test', { body: 'Notification is working!' });
+      }
+    }
+
+    function testDownload() {
+      const blob = new Blob(['Catalog download test - success!'], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'catalog-test.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+      document.getElementById('download-result').textContent = 'Download triggered. Check ~/Downloads/';
+    }
+
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        document.getElementById('upload-result').textContent = 'Uploaded: ' + file.name + ' (' + file.size + ' bytes)';
+      }
+    });
+  </script>
+</body>
+</html>
