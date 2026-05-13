@@ -16,6 +16,20 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'catalog-icon', privileges: { standard: true, secure: true, supportFetchAPI: true, bypassCSP: true } },
 ]);
 
+// Chromium third-party storage partitioning (default-on since M115) breaks
+// Firebase Auth's signInWithRedirect / signInWithPopup flows: the auth
+// handler iframe on `{project}.firebaseapp.com` writes credentials to its own
+// storage, then a sibling iframe on the user's app origin tries to read that
+// state — but partitioning treats those as separate buckets. The handler
+// returns "Unable to process request due to missing initial state".
+//
+// We're a site-specific browser hosting trusted first-party apps, not a
+// general browser carrying random third-party iframes, so the privacy
+// rationale for partitioning doesn't apply. Disable it so cross-origin auth
+// handshakes work the way they do in WebCatalog / desktop Chrome before M115.
+// Must be set before app.whenReady().
+app.commandLine.appendSwitch('disable-features', 'ThirdPartyStoragePartitioning,StorageAccessAPIForOriginExtension');
+
 function getAppIdFromArgs() {
   for (const arg of process.argv.slice(1)) {
     const match = arg.match(/^--app-id=(.+)$/);
@@ -67,6 +81,43 @@ function getDomain(url) {
   }
 }
 
+// Auth-flow domains that should always navigate in-window even when they're
+// off-origin. Most are Firebase/Google OAuth handshake hosts that the policy
+// would otherwise kick out to the system browser, breaking the handshake mid-
+// flight (the popup posts back to `firebaseapp.com/__/auth/handler`, which
+// must stay in the SSB to read tokens via window.opener).
+const AUTH_DOMAINS = [
+  // Google
+  'accounts.google.com',
+  'oauth2.googleapis.com',
+  'apis.google.com',
+  'googleusercontent.com',
+  'content.googleapis.com',
+  // Firebase Auth
+  'firebaseapp.com',
+  'firebase.google.com',
+  'identitytoolkit.googleapis.com',
+  'securetoken.googleapis.com',
+  'web.app',
+  // Microsoft
+  'login.microsoftonline.com',
+  'login.live.com',
+  'login.microsoft.com',
+  // Apple
+  'appleid.apple.com',
+  // GitHub
+  'github.com',
+  // Common third-party identity providers
+  'auth0.com',
+  'okta.com',
+  'onelogin.com',
+  // Social login
+  'facebook.com',
+  'x.com',
+  'twitter.com',
+  'linkedin.com',
+];
+
 function isInternalNavigation(targetUrl, baseUrl) {
   const targetDomain = getDomain(targetUrl);
   const baseDomain = getDomain(baseUrl);
@@ -77,14 +128,9 @@ function isInternalNavigation(targetUrl, baseUrl) {
 
   if (targetParts === baseParts) return true;
 
-  const oauthDomains = [
-    'accounts.google.com',
-    'login.microsoftonline.com',
-    'appleid.apple.com',
-    'github.com',
-    'auth0.com',
-  ];
-  if (oauthDomains.some(d => targetDomain.includes(d))) return true;
+  if (AUTH_DOMAINS.some(d => targetDomain === d || targetDomain.endsWith(`.${d}`))) {
+    return true;
+  }
 
   return false;
 }
@@ -369,18 +415,87 @@ function createWindow(config, appId) {
     },
   });
 
+  // Google (and other IdPs) reject OAuth flows from "embedded browsers" via a
+  // `disallowed_useragent` error when the User-Agent string contains tokens
+  // like "Electron/42.0.1" or our app name. Strip those so the UA reads as a
+  // plain Chrome on macOS — the same string a normal Safari/Chrome user would
+  // present — and Firebase Auth/Google OAuth complete normally.
+  const cleanUa = win.webContents.getUserAgent()
+    .replace(/\sElectron\/\S+/g, '')
+    .replace(/\sCatalog\/\S+/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  win.webContents.setUserAgent(cleanUa);
+  // Also set on the session so popups and subresource requests inherit it.
+  win.webContents.session.setUserAgent(cleanUa);
+
   win.loadURL(config.url);
 
   win.webContents.on('page-title-updated', (e, title) => {
     win.setTitle(title);
   });
 
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    if (isInternalNavigation(url, config.url)) {
-      return { action: 'allow' };
+  win.webContents.setWindowOpenHandler(({ url, features, disposition, frameName }) => {
+    if (!isInternalNavigation(url, config.url)) {
+      shell.openExternal(url);
+      return { action: 'deny' };
     }
-    shell.openExternal(url);
-    return { action: 'deny' };
+
+    // Parse the JS-supplied "width=500,height=600,..." feature string. Firebase
+    // and most identity providers call window.open with specific dimensions
+    // for their OAuth popup — without this we'd open the auth window at the
+    // SSB's default 1280×800, which fails the heuristic some IdPs use to
+    // detect a popup and breaks the postMessage-back-to-opener handshake.
+    const feat = {};
+    (features || '').split(/[,;]/).forEach(part => {
+      const [k, v] = part.split('=');
+      if (k && v) feat[k.trim().toLowerCase()] = v.trim();
+    });
+    const num = (key, fallback) => {
+      const n = parseInt(feat[key], 10);
+      return Number.isFinite(n) && n > 0 ? n : fallback;
+    };
+    const isPopupLike = disposition === 'new-window'
+      || frameName === '_blank'
+      || (features && features.length > 0);
+
+    return {
+      action: 'allow',
+      overrideBrowserWindowOptions: isPopupLike ? {
+        // Popup-shaped window so the IdP recognizes it as an auth popup and
+        // sizes/positions like a system browser would.
+        width: num('width', 500),
+        height: num('height', 600),
+        title: config.name,
+        // Inherit the parent's session implicitly; explicitly carry over
+        // contextIsolation so the popup can still talk to its opener via
+        // postMessage (the standard Firebase auth handshake).
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true,
+          sandbox: true,
+        },
+      } : undefined,
+    };
+  });
+
+  // Once a popup is born (typically an OAuth/Firebase auth window), let it
+  // navigate wherever it needs for the handshake. The handshake hops through
+  // several off-origin hosts (accounts.google.com → firebaseapp.com/__/auth/
+  // handler → securetoken.googleapis.com etc.) and the popup posts the result
+  // back to its opener — interrupting any leg of that with shell.openExternal
+  // breaks the login. The main window still enforces its own navigation
+  // policy below; this only relaxes things for genuine child popups.
+  win.webContents.on('did-create-window', (childWin) => {
+    // Carry the cleaned User-Agent into popups so Google OAuth doesn't see
+    // "Electron/X.Y.Z" and reject with `disallowed_useragent`.
+    childWin.webContents.setUserAgent(cleanUa);
+
+    childWin.webContents.setWindowOpenHandler(({ url: childUrl }) => {
+      // Allow nested popups too (some IdPs open additional confirmation
+      // windows); we don't try to police them.
+      return { action: 'allow' };
+    });
   });
 
   win.webContents.on('will-navigate', (e, url) => {
@@ -513,7 +628,8 @@ function setupCatalogIPC() {
 
   ipcMain.handle('apps:create', async (e, { name, url, iconPath: customIconPath, iconUrl, iconUrls, tags = [], favorite = false }) => {
     const { buildStubApp, slugify } = require('../generator/create-app');
-    const appId = slugify(name);
+    const appId = slugify(name, url);
+    if (!appId) throw new Error('Failed to derive appId from name/url');
 
     const appDir = path.join(APPS_DIR, appId);
     fs.mkdirSync(appDir, { recursive: true });

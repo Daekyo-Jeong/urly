@@ -4,7 +4,8 @@ node_modules/
 # Build output
 dist/
 
-# Generated icon (regenerated via `npm run build:icon`)
+# Generated icon artifacts (regenerated via `npm run build:icon`)
+# assets/icon-source.svg IS tracked — it's the canonical hand-tuned source.
 assets/icon.icns
 assets/icon.png
 assets/icon.svg
