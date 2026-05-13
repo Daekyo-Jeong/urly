@@ -124,15 +124,17 @@ function GridCard({ app, size = 96, selected, hovered, menuOpen, onSelect, onDou
           ref={menuBtnRef}
           onClick={e => { e.stopPropagation(); onMenuToggle?.(app.appId); }}
           style={{
-            position: 'absolute', top: 6, right: 6,
-            width: 22, height: 22, borderRadius: 11,
-            // Closed: pill surface that contrasts with the card in both themes.
-            // Open: invert — T.text bg, T.windowBg icon — stays legible everywhere.
+            position: 'absolute', top: -4, right: -4,
+            width: 24, height: 24, borderRadius: 12,
+            // Above the icon AND its drop-shadow filter — the filter wraps
+            // the squircle SVG inside the AppMark and can otherwise paint
+            // over a sibling with default stacking.
+            zIndex: 20,
             background: menuOpen ? T.text : T.controlActive,
             color: menuOpen ? T.windowBg : T.text,
             boxShadow: menuOpen
-              ? '0 0.5px 0 rgba(0,0,0,0.20), 0 2px 6px rgba(0,0,0,0.25)'
-              : `0 0.5px 0 ${T.sep}, 0 1px 3px ${T.sep}, inset 0 0 0 0.5px ${T.sepStrong}`,
+              ? '0 0.5px 0 rgba(0,0,0,0.20), 0 2px 6px rgba(0,0,0,0.30)'
+              : `0 0 0 0.5px ${T.sepStrong}, 0 1px 3px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.12)`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
@@ -199,18 +201,19 @@ export default function GridView({ apps, onAction, title = 'All Apps' }) {
         onClick={e => { if (e.target === e.currentTarget) { setSelectedId(null); setMenuOpenId(null); } }}
         style={{
         display: 'grid',
-        // Cell size sits just slightly over the icon (96 px) + label gutter, so
-        // the squircle dominates the tile the way Apple's App Icon Template
-        // does in 13:131 — minimal whitespace inside each card.
-        gridTemplateColumns: 'repeat(auto-fill, minmax(112px, 1fr))',
-        gap: 4,
+        // Each tile is exactly the icon size — no padding around the squircle.
+        // Visual separation comes from the inter-tile gap, not from tile
+        // padding, so the squircle == the tile (matching Figma 13:131).
+        gridTemplateColumns: 'repeat(auto-fill, 96px)',
+        columnGap: 24,
+        rowGap: 20,
         justifyContent: 'start',
       }}>
         {apps.map(app => (
           <div key={app.appId}
             onMouseEnter={() => setHoveredId(app.appId)}
             onMouseLeave={() => setHoveredId(null)}
-            style={{ maxWidth: 128, minWidth: 0 }}
+            style={{ width: 96 }}
           >
             <GridCard
               app={app}

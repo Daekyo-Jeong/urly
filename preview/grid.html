@@ -23,10 +23,9 @@
     --accent-muted: rgba(255,107,53,0.12);
 
     /* --- Dial these numbers, then port to GridView.jsx --- */
-    --icon-size: 96px;       /* AppMark size */
-    --cell-min: 112px;       /* minmax(cell-min, 1fr) */
-    --cell-max: 128px;       /* per-tile max width */
-    --grid-gap: 4px;         /* gap between tiles */
+    --icon-size: 96px;       /* AppMark size (== tile width) */
+    --column-gap: 24px;      /* horizontal space between tiles */
+    --row-gap: 20px;         /* vertical space between rows */
     --label-gap: 8px;        /* between icon and label */
     --grid-padding: 20px 24px 32px;
   }
@@ -50,13 +49,31 @@
   .grid {
     padding: var(--grid-padding);
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(var(--cell-min), 1fr));
-    gap: var(--grid-gap);
+    grid-template-columns: repeat(auto-fill, var(--icon-size));
+    column-gap: var(--column-gap);
+    row-gap: var(--row-gap);
     justify-content: start;
   }
   .cell {
-    max-width: var(--cell-max);
+    width: var(--icon-size);
     min-width: 0;
+    position: relative;
+  }
+  .menu-btn {
+    position: absolute;
+    top: -4px; right: -4px;
+    width: 24px; height: 24px;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 0 0 0.5px rgba(0,0,0,0.14),
+                0 1px 3px rgba(0,0,0,0.18),
+                0 2px 6px rgba(0,0,0,0.12);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 20;
+    cursor: default;
+  }
+  @media (prefers-color-scheme: dark) {
+    .menu-btn { background: rgba(255,255,255,0.16); }
   }
   .tile {
     display: flex;
@@ -126,9 +143,8 @@
 <body>
   <div class="controls">
     <label>icon-size <input type="range" min="48" max="160" value="96" data-var="--icon-size" data-suffix="px" /><span class="val">96px</span></label>
-    <label>cell-min <input type="range" min="80" max="200" value="112" data-var="--cell-min" data-suffix="px" /><span class="val">112px</span></label>
-    <label>cell-max <input type="range" min="80" max="240" value="128" data-var="--cell-max" data-suffix="px" /><span class="val">128px</span></label>
-    <label>grid-gap <input type="range" min="0" max="24" value="4" data-var="--grid-gap" data-suffix="px" /><span class="val">4px</span></label>
+    <label>column-gap <input type="range" min="0" max="48" value="24" data-var="--column-gap" data-suffix="px" /><span class="val">24px</span></label>
+    <label>row-gap <input type="range" min="0" max="48" value="20" data-var="--row-gap" data-suffix="px" /><span class="val">20px</span></label>
     <label>label-gap <input type="range" min="0" max="24" value="8" data-var="--label-gap" data-suffix="px" /><span class="val">8px</span></label>
   </div>
 
@@ -168,8 +184,18 @@
     APPS.forEach((app, i) => {
       const cell = document.createElement('div');
       cell.className = 'cell';
+      const isSelected = i === 2;
       cell.innerHTML = `
-        <div class="tile ${i === 2 ? 'selected' : ''}">
+        <div class="tile ${isSelected ? 'selected' : ''}">
+          ${isSelected ? `
+            <div class="menu-btn" title="actions">
+              <svg width="14" height="14" viewBox="0 0 16 16">
+                <circle cx="3.5" cy="8" r="1.1" fill="currentColor"/>
+                <circle cx="8" cy="8" r="1.1" fill="currentColor"/>
+                <circle cx="12.5" cy="8" r="1.1" fill="currentColor"/>
+              </svg>
+            </div>
+          ` : ''}
           <svg class="squircle" viewBox="0 0 1024 1024">
             <defs>
               <clipPath id="sq-${i}"><path d="${SQUIRCLE_D}"/></clipPath>
