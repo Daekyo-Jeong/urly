@@ -17,18 +17,42 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 // Chromium third-party storage partitioning (default-on since M115) breaks
-// Firebase Auth's signInWithRedirect / signInWithPopup flows: the auth
-// handler iframe on `{project}.firebaseapp.com` writes credentials to its own
-// storage, then a sibling iframe on the user's app origin tries to read that
-// state — but partitioning treats those as separate buckets. The handler
-// returns "Unable to process request due to missing initial state".
+// Firebase Auth's signInWithPopup / signInWithRedirect flows. Concrete trace
+// for the worktime-server site (Firebase project worktimemanager-fb56f):
 //
-// We're a site-specific browser hosting trusted first-party apps, not a
-// general browser carrying random third-party iframes, so the privacy
-// rationale for partitioning doesn't apply. Disable it so cross-origin auth
-// handshakes work the way they do in WebCatalog / desktop Chrome before M115.
-// Must be set before app.whenReady().
-app.commandLine.appendSwitch('disable-features', 'ThirdPartyStoragePartitioning,StorageAccessAPIForOriginExtension');
+//   1. show.hnine.com calls auth.signInWithPopup(googleProvider)
+//   2. Firebase SDK opens popup → worktimemanager-fb56f.firebaseapp.com/__/auth/handler
+//   3. SDK ALSO embeds a hidden iframe at the SAME origin inside show.hnine.com
+//      to relay messages between popup and opener
+//   4. Both popup and iframe write/read the OAuth state in
+//      `worktimemanager-fb56f.firebaseapp.com` storage. Without partitioning,
+//      they share that storage. With partitioning ON:
+//        - iframe's storage is keyed by (show.hnine.com, firebaseapp.com) pair
+//        - popup's storage is keyed by (firebaseapp.com, firebaseapp.com) pair
+//      Different partitions of the same origin → they can't see each other.
+//   5. The handler returns "Unable to process request due to missing initial
+//      state" and the user's catch shows "로그인에 실패했습니다".
+//
+// WebCatalog works because it ships an older Chromium (pre-M115) that didn't
+// have this feature. Modern desktop Chrome users hit the same issue on web
+// — Google's fix is to migrate the authDomain to match the app's domain
+// (Firebase Hosting custom domain), which is a site-level change we can't
+// make. From the SSB side we opt the whole browser out of partitioning since
+// we only host trusted first-party apps where the cross-site tracking
+// rationale doesn't apply.
+//
+// Several related features sometimes have to be disabled together — listing
+// the full set so the next Chromium uplift doesn't silently re-break this.
+app.commandLine.appendSwitch(
+  'disable-features',
+  [
+    'ThirdPartyStoragePartitioning',   // the M115 culprit
+    'PartitionedCookies',              // separate cookie partition
+    'TrackingProtection3pcd',          // Chrome's 3rd-party-cookie deprecation
+    'PrivacySandboxSettings4',         // sandbox UI / consent flows
+    'StoragePartitioningByDefault',    // safety belt — alias name used in some milestones
+  ].join(',')
+);
 
 function getAppIdFromArgs() {
   for (const arg of process.argv.slice(1)) {
@@ -416,17 +440,15 @@ function createWindow(config, appId) {
   });
 
   // Google (and other IdPs) reject OAuth flows from "embedded browsers" via a
-  // `disallowed_useragent` error when the User-Agent string contains tokens
-  // like "Electron/42.0.1" or our app name. Strip those so the UA reads as a
-  // plain Chrome on macOS — the same string a normal Safari/Chrome user would
-  // present — and Firebase Auth/Google OAuth complete normally.
-  const cleanUa = win.webContents.getUserAgent()
-    .replace(/\sElectron\/\S+/g, '')
-    .replace(/\sCatalog\/\S+/gi, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  // `disallowed_useragent` error when the User-Agent contains tokens like
+  // "Electron/42.0.1" or our app name. Build a clean UA from the actual
+  // Chrome version Electron ships, with no Electron/Catalog markers — same
+  // shape a standard Chrome on macOS sends.
+  const chromeVersion = (process.versions.chrome || '126.0.0.0').split('.').slice(0, 4).join('.');
+  const cleanUa = `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${chromeVersion} Safari/537.36`;
   win.webContents.setUserAgent(cleanUa);
-  // Also set on the session so popups and subresource requests inherit it.
+  // Session-wide too, so popups, subresource fetches, and any future windows
+  // share the same UA without needing per-window setup.
   win.webContents.session.setUserAgent(cleanUa);
 
   win.loadURL(config.url);
