@@ -186,6 +186,22 @@
 
 ---
 
+---
+
+## Landing Page
+
+마케팅/다운로드 페이지 (`landing/index.html`).
+
+- [x] Hero — CatalogIcon, 타이틀, 태그라인, 다운로드 CTA 버튼, GitHub 링크
+- [x] Before/After — 브라우저 탭 vs. 독립 앱 윈도우 비교 mock
+- [x] Feature Grid — 6개 카드 (Spotlight, 세션 격리, macOS chrome, 아이콘 자동 추출, 캐시 초기화, 태그/즐겨찾기)
+- [x] How It Works — 3단계 (URL 붙여넣기 → 추출 중 → Spotlight 실행) mock 포함
+- [x] Architecture Note — 기술 설명 단락
+- [x] Footer — 다운로드 버튼 반복, 제작자 링크, GitHub
+- [x] Self-contained HTML (React+Babel CDN) — 빌드 단계 없이 GitHub Pages 배포 가능
+
+---
+
 ## 작업 순서 요약
 
 ```

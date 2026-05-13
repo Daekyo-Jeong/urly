@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Catalog — Turn any URL into a macOS app</title>
+<meta name="description" content="Catalog turns any website into a real macOS app — Spotlight-searchable, dockable, with its own cookies. Free for personal use." />
+<meta property="og:title" content="Catalog — Turn any URL into a macOS app" />
+<meta property="og:description" content="Spotlight-searchable. Dockable. Sessions don't bleed across sites. Free, personal use." />
+
+<style>
+  :root { color-scheme: light; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #F5F2EC;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+  }
+
+  a.cta-primary {
+    display: inline-flex; align-items: center; gap: 12px;
+    height: 60px; padding: 0 32px;
+    background: #FF6B35; color: #fff;
+    border-radius: 14px;
+    font-size: 19px; font-weight: 600; letter-spacing: -0.2px;
+    text-decoration: none;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.04), 0 12px 28px rgba(255,107,53,0.32), inset 0 1px 0 rgba(255,255,255,0.18);
+    transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+  }
+  a.cta-primary:hover {
+    background: #FF7E50;
+    transform: translateY(-1px);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.04), 0 16px 36px rgba(255,107,53,0.36), inset 0 1px 0 rgba(255,255,255,0.18);
+  }
+  a.cta-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.04), 0 6px 16px rgba(255,107,53,0.28), inset 0 1px 0 rgba(255,255,255,0.18);
+  }
+
+  a.cta-secondary {
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 40px; padding: 0 18px;
+    background: #FF6B35; color: #fff;
+    border-radius: 10px;
+    font-size: 14px; font-weight: 600; letter-spacing: -0.1px;
+    text-decoration: none;
+    box-shadow: 0 6px 16px rgba(255,107,53,0.28), inset 0 1px 0 rgba(255,255,255,0.18);
+    transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+  }
+  a.cta-secondary:hover {
+    background: #FF7E50;
+    transform: translateY(-1px);
+  }
+  a.link-muted {
+    color: rgba(0,0,0,0.56); text-decoration: none;
+    transition: color 100ms ease;
+  }
+  a.link-muted:hover { color: rgba(0,0,0,0.85); }
+
+  .feature-card {
+    background: #fff; border-radius: 16px; padding: 28px 26px;
+    box-shadow: 0 0 0 0.5px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.03), 0 6px 18px rgba(0,0,0,0.04);
+    display: flex; flex-direction: column; gap: 14px;
+    transition: transform 160ms ease, box-shadow 160ms ease;
+  }
+  .feature-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 0 0.5px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04), 0 10px 28px rgba(0,0,0,0.06);
+  }
+
+  @media (max-width: 760px) {
+    .two-col { grid-template-columns: 1fr !important; }
+    .three-col { grid-template-columns: 1fr 1fr !important; }
+    .hero-title { font-size: 56px !important; letter-spacing: -2px !important; }
+    .section-title { font-size: 34px !important; }
+  }
+  @media (max-width: 480px) {
+    .three-col { grid-template-columns: 1fr !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel">
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const T = {
+  font: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif',
+  fontMono: '"SF Mono", ui-monospace, Menlo, Consolas, monospace',
+  tlRed: '#FF5F57', tlYellow: '#FEBC2E', tlGreen: '#28C840',
+  accent: '#FF6B35', accentMuted: 'rgba(255,107,53,0.12)',
+  text: 'rgba(0,0,0,0.85)', text2: 'rgba(0,0,0,0.56)', text3: 'rgba(0,0,0,0.36)',
+  sep: 'rgba(0,0,0,0.08)', sepStrong: 'rgba(0,0,0,0.14)',
+  green: '#34C759',
+};
+
+const LP = {
+  bg: '#F5F2EC', card: '#ffffff',
+  ...T,
+  maxW: 960,
+};
+
+const DMG_URL = 'https://github.com/Daekyo-Jeong/catalog/releases/download/v0.1.0/Catalog-0.1.0-arm64.dmg';
+const REPO_URL = 'https://github.com/Daekyo-Jeong/catalog';
+
+// ─── Squircle (continuous corner) ────────────────────────────────────────────
+function Squircle({ size = 64, bg = '#000', children, style = {}, shadow = true }) {
+  const id = React.useId();
+  const d = 'M 50 0 C 9 0 0 9 0 50 C 0 91 9 100 50 100 C 91 100 100 91 100 50 C 100 9 91 0 50 0 Z';
+  return (
+    <div style={{
+      width: size, height: size, position: 'relative', flexShrink: 0,
+      filter: shadow ? 'drop-shadow(0 1px 1px rgba(0,0,0,0.10)) drop-shadow(0 2px 4px rgba(0,0,0,0.08))' : 'none',
+      ...style,
+    }}>
+      <svg viewBox="0 0 100 100" width={size} height={size} style={{ display: 'block', position: 'absolute', inset: 0 }}>
+        <defs>
+          <linearGradient id={`hl-${id}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#fff" />
+            <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+          </linearGradient>
+          <clipPath id={`sq-${id}`}><path d={d} /></clipPath>
+        </defs>
+        <g clipPath={`url(#sq-${id})`}>
+          <rect width="100" height="100" fill={bg} />
+          <rect width="100" height="50" fill={`url(#hl-${id})`} opacity="0.18" />
+        </g>
+        <path d={d} fill="none" stroke="rgba(0,0,0,0.10)" strokeWidth="0.8" />
+      </svg>
+      <div style={{
+        position: 'absolute', inset: 0, display: 'flex',
+        alignItems: 'center', justifyContent: 'center',
+        color: '#fff', fontFamily: T.font, fontWeight: 600,
+        fontSize: size * 0.5, letterSpacing: -0.6, lineHeight: 1,
+        paddingTop: Math.round(size * 0.02),
+      }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ─── Catalog brand icon ───────────────────────────────────────────────────────
+function CatalogIcon({ size = 64 }) {
+  const gid = React.useId();
+  return (
+    <div style={{
+      width: size, height: size, position: 'relative', flexShrink: 0,
+      filter: 'drop-shadow(0 2px 6px rgba(232,75,31,0.28)) drop-shadow(0 1px 2px rgba(0,0,0,0.12))',
+    }}>
+      <svg viewBox="0 0 100 100" width={size} height={size} style={{ display: 'block', position: 'absolute', inset: 0 }}>
+        <defs>
+          <linearGradient id={`cg-${gid}`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#FF8C5A" />
+            <stop offset="100%" stopColor="#E84B1F" />
+          </linearGradient>
+          <linearGradient id={`hl-${gid}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#fff" />
+            <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+          </linearGradient>
+          <clipPath id={`sq-${gid}`}>
+            <path d="M 50 0 C 9 0 0 9 0 50 C 0 91 9 100 50 100 C 91 100 100 91 100 50 C 100 9 91 0 50 0 Z" />
+          </clipPath>
+        </defs>
+        <g clipPath={`url(#sq-${gid})`}>
+          <rect width="100" height="100" fill={`url(#cg-${gid})`} />
+          <rect width="100" height="50" fill={`url(#hl-${gid})`} opacity="0.18" />
+        </g>
+        <path d="M 50 0 C 9 0 0 9 0 50 C 0 91 9 100 50 100 C 91 100 100 91 100 50 C 100 9 91 0 50 0 Z"
+          fill="none" stroke="rgba(0,0,0,0.10)" strokeWidth="0.8" />
+      </svg>
+      {/* 2×2 grid mark */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <div style={{
+          display: 'grid', gridTemplateColumns: '1fr 1fr',
+          gap: size * 0.065,
+          padding: size * 0.22,
+        }}>
+          {[0,1,2,3].map(i => (
+            <div key={i} style={{
+              width: size * 0.22, height: size * 0.22,
+              borderRadius: size * 0.05,
+              background: 'rgba(255,255,255,0.95)',
+              boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.04)',
+            }} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── App letter marks ─────────────────────────────────────────────────────────
+const APPS = {
+  slack:   { color: '#4A154B', mark: 'S' },
+  figma:   { color: '#0D0D0D', mark: 'F' },
+  linear:  { color: '#5E6AD2', mark: 'L' },
+  notion:  { color: '#1F1F1F', mark: 'N' },
+  github:  { color: '#24292E', mark: 'G' },
+  spotify: { color: '#1DB954', mark: 'S' },
+};
+
+function AppMark({ id, size = 28, shadow = false }) {
+  const a = APPS[id];
+  if (!a) return null;
+  return (
+    <Squircle size={size} bg={a.color} shadow={shadow}>
+      <span style={{ fontWeight: 600, fontSize: size * 0.52, lineHeight: 1 }}>{a.mark}</span>
+    </Squircle>
+  );
+}
+
+// ─── Traffic lights ───────────────────────────────────────────────────────────
+function TrafficLights({ size = 11 }) {
+  return (
+    <div style={{ display: 'flex', gap: 7, alignItems: 'center', flexShrink: 0 }}>
+      {[T.tlRed, T.tlYellow, T.tlGreen].map((c, i) => (
+        <div key={i} style={{
+          width: size, height: size, borderRadius: size,
+          background: c, boxShadow: 'inset 0 0 0 0.5px rgba(0,0,0,0.10)',
+        }} />
+      ))}
+    </div>
+  );
+}
+
+// ─── Icon components ──────────────────────────────────────────────────────────
+function DownloadArrow({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <path d="M10 3v11M5 10l5 5 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3.5 17.5h13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SearchIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <circle cx="9" cy="9" r="5.5" stroke="rgba(0,0,0,0.36)" strokeWidth="1.8" />
+      <path d="M13 13l4 4" stroke="rgba(0,0,0,0.36)" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function Spinner() {
+  return (
+    <svg width={13} height={13} viewBox="0 0 16 16" style={{ display: 'block' }}>
+      <circle cx="8" cy="8" r="6" stroke="rgba(0,0,0,0.10)" strokeWidth="1.6" fill="none" />
+      <path d="M14 8a6 6 0 00-6-6" stroke={T.accent} strokeWidth="1.6" fill="none" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+// ─── Feature icon glyphs ──────────────────────────────────────────────────────
+function FeatureIcon({ name, size = 24 }) {
+  const s = { display: 'block' };
+  const base = { width: size, height: size, viewBox: '0 0 28 28', fill: 'none', stroke: 'currentColor', strokeWidth: '1.6', strokeLinecap: 'round', strokeLinejoin: 'round', style: s };
+  switch (name) {
+    case 'spotlight': return <svg {...base}><circle cx="12" cy="12" r="6.5" /><path d="M16.8 16.8l5.2 5.2" /></svg>;
+    case 'jars': return <svg {...base}><rect x="3" y="9" width="8" height="14" rx="1.6" /><rect x="13" y="5" width="8" height="18" rx="1.6" /><path d="M3 13h8M13 9h8" /></svg>;
+    case 'window': return <svg {...base}><rect x="3" y="5" width="22" height="18" rx="2.2" /><path d="M3 10h22" /><circle cx="6.5" cy="7.5" r="0.9" fill="currentColor" stroke="none" /><circle cx="9.2" cy="7.5" r="0.9" fill="currentColor" stroke="none" /><circle cx="11.9" cy="7.5" r="0.9" fill="currentColor" stroke="none" /></svg>;
+    case 'autoicon': return <svg {...base}><rect x="5" y="5" width="18" height="18" rx="4.2" /><path d="M14 11v6M11 14h6" /></svg>;
+    case 'reset': return <svg {...base}><path d="M22 7v6h-6" /><path d="M22 13a8 8 0 10-3 6.2" /></svg>;
+    case 'tags': return <svg {...base}><path d="M14.5 4H22v7.5L12 21.5 4.5 14 14.5 4z" /><circle cx="18" cy="8" r="1.2" /></svg>;
+    default: return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MOCKS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Before: crowded browser window
+function BrowserMock() {
+  const tabs = [
+    { label: 'Inbox (94)',       color: '#D93025', active: false },
+    { label: 'Slack | acme',    color: '#4A154B', active: false },
+    { label: 'Calendar',        color: '#1A73E8', active: false },
+    { label: 'Notion — Home',   color: '#1F1F1F', active: true  },
+    { label: 'Linear',          color: '#5E6AD2', active: false },
+    { label: 'Figma',           color: '#0D0D0D', active: false },
+    { label: 'PR #482',         color: '#24292E', active: false },
+    { label: 'ChatGPT',         color: '#10A37F', active: false },
+    { label: 'Spotify',         color: '#1DB954', active: false },
+    { label: 'docs.google',     color: '#1A73E8', active: false },
+    { label: 'Hacker News',     color: '#FF6600', active: false },
+    { label: 'Stack Overflow',  color: '#F48024', active: false },
+    { label: 'Twitter',         color: '#1DA1F2', active: false },
+    { label: 'YouTube',         color: '#FF0000', active: false },
+    { label: 'Maps',            color: '#34A853', active: false },
+  ];
+
+  return (
+    <div style={{
+      width: '100%', height: '100%',
+      background: '#EAE6DF', borderRadius: 10,
+      boxShadow: '0 0 0 0.5px rgba(0,0,0,0.18), 0 18px 50px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.10)',
+      display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      fontFamily: T.font,
+    }}>
+      {/* tab strip */}
+      <div style={{
+        height: 36, flexShrink: 0, background: '#DAD4CB',
+        display: 'flex', alignItems: 'flex-end',
+        paddingLeft: 12, paddingRight: 8, gap: 1,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', height: 36, paddingRight: 10 }}>
+          <TrafficLights size={11} />
+        </div>
+        <div style={{ display: 'flex', flex: 1, minWidth: 0, alignItems: 'flex-end', gap: 1, overflow: 'hidden' }}>
+          {tabs.map((t, i) => (
+            <div key={i} style={{
+              flex: t.active ? '0 1 110px' : '1 1 0', minWidth: 0, height: 28,
+              background: t.active ? '#F4F1EB' : 'transparent',
+              borderTopLeftRadius: 7, borderTopRightRadius: 7,
+              display: 'flex', alignItems: 'center', gap: 5, padding: '0 8px',
+              fontSize: 11, color: t.active ? T.text : T.text2,
+              boxShadow: t.active ? '0 -0.5px 0 rgba(0,0,0,0.10) inset, -0.5px 0 0 rgba(0,0,0,0.08), 0.5px 0 0 rgba(0,0,0,0.08)' : 'none',
+            }}>
+              <span style={{ width: 10, height: 10, borderRadius: 2, background: t.color, flexShrink: 0 }} />
+              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, fontWeight: t.active ? 500 : 400 }}>{t.label}</span>
+              {t.active && <span style={{ color: T.text3, fontSize: 13 }}>×</span>}
+            </div>
+          ))}
+          <div style={{ width: 24, height: 24, marginLeft: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.text2, fontSize: 14, fontWeight: 300 }}>+</div>
+        </div>
+      </div>
+      {/* address bar */}
+      <div style={{
+        height: 40, flexShrink: 0, background: '#F4F1EB',
+        borderBottom: '0.5px solid rgba(0,0,0,0.10)',
+        display: 'flex', alignItems: 'center', padding: '0 12px', gap: 8,
+      }}>
+        <div style={{ display: 'flex', gap: 6, color: T.text3 }}>
+          <span style={{ fontSize: 14 }}>‹</span>
+          <span style={{ fontSize: 14 }}>›</span>
+          <span style={{ fontSize: 12, marginLeft: 2 }}>↻</span>
+        </div>
+        <div style={{
+          flex: 1, height: 24, background: '#fff',
+          border: '0.5px solid rgba(0,0,0,0.12)', borderRadius: 6,
+          display: 'flex', alignItems: 'center', gap: 6, padding: '0 10px',
+          fontSize: 12, color: T.text2,
+        }}>
+          <span style={{ color: T.text3, fontSize: 10 }}>🔒</span>
+          <span>
+            <span style={{ color: T.text3 }}>https://www.</span>
+            <span style={{ color: T.text, fontWeight: 500 }}>notion.so</span>
+            <span style={{ color: T.text3 }}>/workspace</span>
+          </span>
+        </div>
+        <div style={{ width: 24, height: 24, borderRadius: 12, background: 'linear-gradient(135deg, #aab, #889)', flexShrink: 0 }} />
+      </div>
+      {/* fake content */}
+      <div style={{ flex: 1, background: '#F4F1EB', padding: 18, overflow: 'hidden' }}>
+        <div style={{ height: 12, width: '38%', background: '#E5E0D7', borderRadius: 4, marginBottom: 12 }} />
+        <div style={{ height: 8, width: '62%', background: '#EBE6DC', borderRadius: 4, marginBottom: 7 }} />
+        <div style={{ height: 8, width: '54%', background: '#EBE6DC', borderRadius: 4, marginBottom: 7 }} />
+        <div style={{ height: 8, width: '70%', background: '#EBE6DC', borderRadius: 4 }} />
+      </div>
+    </div>
+  );
+}
+
+// After: clean SSB window with Dock
+function AppWindowMock() {
+  return (
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: 14, fontFamily: T.font }}>
+      <div style={{
+        flex: 1, minHeight: 0, background: '#fff', borderRadius: 10,
+        boxShadow: '0 0 0 0.5px rgba(0,0,0,0.18), 0 18px 50px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.10)',
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      }}>
+        <div style={{
+          height: 38, flexShrink: 0, background: '#F6F6F6',
+          borderBottom: '0.5px solid rgba(0,0,0,0.08)',
+          display: 'flex', alignItems: 'center', padding: '0 12px',
+          position: 'relative',
+        }}>
+          <TrafficLights size={11} />
+          <div style={{
+            position: 'absolute', left: 0, right: 0, textAlign: 'center',
+            fontSize: 13, fontWeight: 500, color: T.text, letterSpacing: -0.1, pointerEvents: 'none',
+          }}>Notion</div>
+        </div>
+        <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+          <div style={{
+            width: 110, flexShrink: 0, background: '#FBFAF8',
+            borderRight: '0.5px solid rgba(0,0,0,0.06)',
+            padding: '14px 10px', display: 'flex', flexDirection: 'column', gap: 6,
+          }}>
+            {[80, 60, 70, 52].map((w, i) => (
+              <div key={i} style={{ height: 7, background: `rgba(0,0,0,${i === 0 ? 0.10 : 0.07})`, borderRadius: 3, width: `${w}%` }} />
+            ))}
+          </div>
+          <div style={{ flex: 1, padding: '22px 24px' }}>
+            <div style={{ height: 14, width: '40%', background: 'rgba(0,0,0,0.14)', borderRadius: 4, marginBottom: 16 }} />
+            {[78, 64, 70].map((w, i) => (
+              <div key={i} style={{ height: 8, width: `${w}%`, background: 'rgba(0,0,0,0.07)', borderRadius: 4, marginBottom: 7 }} />
+            ))}
+          </div>
+        </div>
+      </div>
+      {/* mini Dock */}
+      <div style={{
+        alignSelf: 'center',
+        display: 'flex', alignItems: 'flex-end', gap: 6, padding: '6px 10px',
+        background: 'rgba(255,255,255,0.55)',
+        backdropFilter: 'blur(20px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+        borderRadius: 14,
+        boxShadow: '0 0 0 0.5px rgba(0,0,0,0.10), 0 6px 20px rgba(0,0,0,0.12)',
+      }}>
+        {['slack','figma','linear','notion','github','spotify'].map((id) => (
+          <div key={id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <AppMark id={id} size={28} />
+            <div style={{ width: 3, height: 3, borderRadius: 2, background: id === 'notion' ? 'rgba(0,0,0,0.55)' : 'transparent' }} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// New app modal (step 1 or 2)
+function NewAppModal({ state }) {
+  const url = state === 'empty' ? '' : 'https://www.notion.so';
+  const showPreview = state !== 'empty';
+  const isExtracting = state === 'extracting';
+  const isFilled = state === 'filled';
+
+  return (
+    <div style={{
+      width: '100%', height: '100%', background: '#fff', borderRadius: 12,
+      boxShadow: '0 0 0 0.5px rgba(0,0,0,0.18), 0 18px 50px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.10)',
+      display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: T.font,
+    }}>
+      <div style={{
+        height: 34, flexShrink: 0, background: '#F6F6F6',
+        borderBottom: '0.5px solid rgba(0,0,0,0.08)',
+        display: 'flex', alignItems: 'center', padding: '0 12px', position: 'relative',
+      }}>
+        <TrafficLights size={10} />
+        <div style={{ position: 'absolute', left: 0, right: 0, textAlign: 'center', fontSize: 12, fontWeight: 500, color: T.text, pointerEvents: 'none' }}>
+          New App
+        </div>
+      </div>
+      <div style={{ flex: 1, padding: '22px 26px 18px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: T.text2, marginBottom: 6, letterSpacing: 0.1 }}>URL</div>
+          <div style={{
+            height: 30, padding: '0 10px', background: '#fff',
+            border: `0.5px solid ${T.sepStrong}`, borderRadius: 6,
+            display: 'flex', alignItems: 'center', fontSize: 13,
+            boxShadow: state === 'empty' ? `0 0 0 3px ${T.accentMuted}, 0 0 0 1.5px ${T.accent}` : 'none',
+          }}>
+            {url ? (
+              <span style={{ color: T.text }}>{url}</span>
+            ) : (
+              <span style={{ color: T.text3 }}>https://…</span>
+            )}
+            {state === 'empty' && (
+              <span style={{ width: 1, height: 14, background: T.accent, marginLeft: 1, display: 'inline-block' }} />
+            )}
+          </div>
+        </div>
+        <div style={{
+          flex: 1, minHeight: 0, padding: 14,
+          background: '#FAFAF8', border: `0.5px solid ${T.sep}`, borderRadius: 8,
+          display: 'flex', alignItems: 'center', gap: 14,
+        }}>
+          {showPreview ? (
+            <>
+              <div style={{ position: 'relative' }}>
+                {isFilled ? (
+                  <Squircle size={48} bg="#1F1F1F" shadow>
+                    <span style={{ fontWeight: 600, fontSize: 24, lineHeight: 1 }}>N</span>
+                  </Squircle>
+                ) : (
+                  <div style={{
+                    width: 48, height: 48, borderRadius: 10, background: '#EEEAE2',
+                    border: `0.5px dashed ${T.sepStrong}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: T.text3, fontSize: 10,
+                  }}>icon</div>
+                )}
+                {isFilled && (
+                  <div style={{
+                    position: 'absolute', bottom: -3, right: -3,
+                    width: 16, height: 16, borderRadius: 16,
+                    background: T.green, color: '#fff',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 10, fontWeight: 700, boxShadow: '0 0 0 1.5px #fff',
+                  }}>✓</div>
+                )}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: T.text, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {isFilled ? 'Notion' : (
+                    <><span style={{ color: T.text3, fontStyle: 'italic' }}>Reading title…</span><Spinner /></>
+                  )}
+                </div>
+                <div style={{ fontSize: 11, color: T.text2, marginTop: 3 }}>
+                  {isFilled ? 'www.notion.so' : 'Fetching apple-touch-icon…'}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div style={{ fontSize: 12, color: T.text3, fontStyle: 'italic' }}>
+              Title and icon will appear here.
+            </div>
+          )}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <div style={{
+            height: 26, padding: '0 12px', background: '#fff',
+            border: `0.5px solid ${T.sepStrong}`, borderRadius: 6,
+            display: 'inline-flex', alignItems: 'center', fontSize: 12, color: T.text,
+          }}>Cancel</div>
+          <div style={{
+            height: 26, padding: '0 12px', borderRadius: 6,
+            background: isFilled ? T.accent : 'rgba(255,107,53,0.45)',
+            display: 'inline-flex', alignItems: 'center', fontSize: 12, color: '#fff', fontWeight: 500,
+            boxShadow: isFilled ? '0 0.5px 0 rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.18)' : 'none',
+          }}>Create</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Spotlight search mock
+function SpotlightMock() {
+  return (
+    <div style={{
+      width: '100%', height: '100%',
+      background: 'linear-gradient(140deg, #cbc3b6 0%, #a39483 100%)',
+      borderRadius: 12, padding: '36px 32px', boxSizing: 'border-box',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
+      fontFamily: T.font,
+    }}>
+      <div style={{
+        width: '100%',
+        background: 'rgba(255,255,255,0.78)',
+        backdropFilter: 'blur(40px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+        borderRadius: 14,
+        boxShadow: '0 0 0 0.5px rgba(0,0,0,0.10), 0 20px 60px rgba(0,0,0,0.30), 0 4px 12px rgba(0,0,0,0.18)',
+        overflow: 'hidden',
+      }}>
+        {/* query */}
+        <div style={{ height: 54, padding: '0 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <SearchIcon size={20} />
+          <span style={{ fontSize: 24, color: T.text, fontWeight: 300, letterSpacing: -0.4 }}>
+            Notion<span style={{ display: 'inline-block', width: 1.5, height: 22, background: T.text, marginLeft: 2, verticalAlign: -3 }} />
+          </span>
+        </div>
+        <div style={{ height: 0.5, background: 'rgba(0,0,0,0.08)' }} />
+        {/* top hit */}
+        <div style={{ height: 44, padding: '0 14px', display: 'flex', alignItems: 'center', gap: 10, background: T.accent }}>
+          <Squircle size={28} bg="#1F1F1F" shadow={false}>
+            <span style={{ fontWeight: 600, fontSize: 14, lineHeight: 1 }}>N</span>
+          </Squircle>
+          <span style={{ fontSize: 14, color: '#fff', fontWeight: 500, flex: 1 }}>Notion</span>
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.80)' }}>Application</span>
+        </div>
+        {/* lower results */}
+        {[
+          { label: 'Notion — www.notion.so', kind: 'Bookmark' },
+          { label: 'notion-export.zip',       kind: 'Folder' },
+        ].map((r, i) => (
+          <div key={i} style={{
+            height: 36, padding: '0 14px',
+            display: 'flex', alignItems: 'center', gap: 10,
+            borderTop: '0.5px solid rgba(0,0,0,0.05)',
+          }}>
+            <div style={{ width: 20, height: 20, borderRadius: 4, background: 'rgba(0,0,0,0.10)', flexShrink: 0 }} />
+            <span style={{ fontSize: 13, color: T.text, flex: 1 }}>{r.label}</span>
+            <span style={{ fontSize: 11, color: T.text3 }}>{r.kind}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAGE SECTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+function Section({ children, pad = '120px 32px', style = {} }) {
+  return (
+    <section style={{ padding: pad, ...style }}>
+      <div style={{ maxWidth: LP.maxW, margin: '0 auto' }}>{children}</div>
+    </section>
+  );
+}
+
+// ─── Hero ─────────────────────────────────────────────────────────────────────
+function Hero() {
+  return (
+    <section style={{ padding: '120px 32px 96px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <CatalogIcon size={108} />
+
+      <h1 className="hero-title" style={{
+        margin: '40px 0 0',
+        fontSize: 88, fontWeight: 700, color: LP.text,
+        letterSpacing: -3.8, lineHeight: 1,
+        fontFamily: LP.font,
+      }}>Catalog</h1>
+
+      <p style={{
+        margin: '24px 0 0',
+        fontSize: 28, fontWeight: 500, color: LP.text,
+        letterSpacing: -0.6, lineHeight: 1.2,
+        maxWidth: 640, textWrap: 'balance',
+      }}>Turn any URL into a macOS app.</p>
+
+      <p style={{
+        margin: '16px 0 0',
+        fontSize: 17, color: LP.text2, lineHeight: 1.5,
+        maxWidth: 520, textWrap: 'pretty',
+      }}>
+        Spotlight-searchable. Dockable. Sessions don't bleed across sites.
+        Free, personal use.
+      </p>
+
+      <div style={{ marginTop: 44, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+        <a href={DMG_URL} className="cta-primary">
+          <DownloadArrow size={20} />
+          <span>Download for macOS</span>
+        </a>
+        <div style={{
+          fontSize: 12, color: LP.text3,
+          fontFamily: T.fontMono, letterSpacing: 0.1,
+        }}>
+          v0.1.0 &nbsp;·&nbsp; Apple Silicon &nbsp;·&nbsp; macOS 12+
+        </div>
+      </div>
+
+      <a href={REPO_URL} className="link-muted" style={{
+        marginTop: 28, fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 4,
+      }}>View on GitHub →</a>
+    </section>
+  );
+}
+
+// ─── Before / After ───────────────────────────────────────────────────────────
+function BeforeAfter() {
+  return (
+    <Section pad="64px 32px 120px">
+      <div style={{ textAlign: 'center', marginBottom: 56 }}>
+        <h2 className="section-title" style={{
+          margin: 0, fontSize: 44, fontWeight: 600, color: LP.text,
+          letterSpacing: -1.2, lineHeight: 1.08, textWrap: 'balance',
+        }}>Same site. Real app.</h2>
+        <p style={{
+          margin: '18px auto 0', fontSize: 19, color: LP.text2, lineHeight: 1.5,
+          maxWidth: 540, textWrap: 'pretty',
+        }}>
+          A web app in a browser tab and a web app in its own window are not the same thing.
+        </p>
+      </div>
+
+      <div className="two-col" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 28 }}>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: LP.text3, textTransform: 'uppercase', letterSpacing: 1.4, marginBottom: 12 }}>Before</div>
+          <div style={{ height: 320 }}><BrowserMock /></div>
+          <p style={{ margin: '20px 0 0', fontSize: 15, color: LP.text2, lineHeight: 1.55, textWrap: 'pretty' }}>
+            A tab. Lost in the pile. Cookies tangled with every other Google session.
+          </p>
+        </div>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: LP.accent, textTransform: 'uppercase', letterSpacing: 1.4, marginBottom: 12 }}>After</div>
+          <div style={{ height: 320 }}><AppWindowMock /></div>
+          <p style={{ margin: '20px 0 0', fontSize: 15, color: LP.text2, lineHeight: 1.55, textWrap: 'pretty' }}>
+            A real app. Cmd+Tab finds it. Its own cookie jar.
+          </p>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ─── Feature Grid ─────────────────────────────────────────────────────────────
+const FEATURES = [
+  { icon: 'spotlight', title: 'Spotlight & Dock native',   body: 'Cmd+Space → "Notion" → Enter. It\'s just there, like any app.' },
+  { icon: 'jars',      title: 'Session isolation',         body: 'Two Google accounts? Three Slack workspaces? Each app has its own cookies. No sign-out dance.' },
+  { icon: 'window',    title: 'Real macOS chrome',         body: 'Traffic lights, native menu bar, keyboard shortcuts. No browser UI.' },
+  { icon: 'autoicon',  title: 'Auto icons',                body: 'Pulls the apple-touch-icon or PWA manifest. Looks the part out of the box.' },
+  { icon: 'reset',     title: 'Per-app cache & sign out',  body: 'Reset state for one app without touching the others.' },
+  { icon: 'tags',      title: 'Tags & favorites',          body: 'Group by Work / Personal / AI. Star the ones you use daily.' },
+];
+
+function FeatureGrid() {
+  return (
+    <Section pad="48px 32px 120px">
+      <div className="three-col" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+        {FEATURES.map((f, i) => (
+          <div key={i} className="feature-card">
+            <div style={{
+              width: 44, height: 44, borderRadius: 11,
+              background: 'rgba(255,107,53,0.10)', color: LP.accent,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <FeatureIcon name={f.icon} size={24} />
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 600, color: LP.text, letterSpacing: -0.3, lineHeight: 1.25, textWrap: 'balance' }}>
+              {f.title}
+            </div>
+            <div style={{ fontSize: 14, color: LP.text2, lineHeight: 1.5, textWrap: 'pretty' }}>
+              {f.body}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+// ─── How It Works ─────────────────────────────────────────────────────────────
+const STEPS = [
+  {
+    title: 'Paste a URL.',
+    body: 'Cmd+N opens a small sheet. Type or paste the address — anything you\'d open in a browser.',
+    mock: 'paste',
+  },
+  {
+    title: 'Catalog grabs the title and icon.',
+    body: 'Catalog reads the page\'s metadata — apple-touch-icon, PWA manifest, OpenGraph title — and shows you what it found.',
+    mock: 'extract',
+  },
+  {
+    title: 'Launch from Spotlight.',
+    body: 'The .app is in /Applications. Cmd+Space, type the name, Enter. From now on it lives alongside everything else.',
+    mock: 'spotlight',
+  },
+];
+
+function StepMock({ kind }) {
+  if (kind === 'paste')    return <NewAppModal state="empty" />;
+  if (kind === 'extract')  return <NewAppModal state="extracting" />;
+  if (kind === 'spotlight') return <SpotlightMock />;
+  return null;
+}
+
+function HowItWorks() {
+  return (
+    <Section pad="48px 32px 120px">
+      <div style={{ textAlign: 'center', marginBottom: 64 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: LP.accent, textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 14 }}>
+          How it works
+        </div>
+        <h2 className="section-title" style={{
+          margin: 0, fontSize: 44, fontWeight: 600, color: LP.text,
+          letterSpacing: -1.2, lineHeight: 1.08, textWrap: 'balance',
+        }}>Three steps. About thirty seconds.</h2>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 80 }}>
+        {STEPS.map((s, i) => {
+          const reversed = i % 2 === 1;
+          return (
+            <div key={i} className="two-col" style={{
+              display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)',
+              gap: 56, alignItems: 'center',
+              direction: reversed ? 'rtl' : 'ltr',
+            }}>
+              <div style={{ direction: 'ltr' }}>
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  width: 36, height: 36, borderRadius: 18,
+                  background: LP.accent, color: '#fff',
+                  fontSize: 16, fontWeight: 600, marginBottom: 18,
+                }}>{i + 1}</div>
+                <h3 style={{ margin: 0, fontSize: 30, fontWeight: 600, color: LP.text, letterSpacing: -0.8, lineHeight: 1.15, textWrap: 'balance' }}>
+                  {s.title}
+                </h3>
+                <p style={{ margin: '14px 0 0', fontSize: 16, color: LP.text2, lineHeight: 1.55, textWrap: 'pretty', maxWidth: 420 }}>
+                  {s.body}
+                </p>
+              </div>
+              <div style={{ direction: 'ltr', height: 280 }}>
+                <StepMock kind={s.mock} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Section>
+  );
+}
+
+// ─── Architecture note ────────────────────────────────────────────────────────
+function ArchNote() {
+  return (
+    <section style={{ padding: '32px 32px 80px' }}>
+      <div style={{
+        maxWidth: 720, margin: '0 auto',
+        textAlign: 'center', paddingTop: 56,
+        borderTop: `0.5px solid ${LP.sep}`,
+      }}>
+        <p style={{
+          margin: 0, fontSize: 14, color: LP.text2, lineHeight: 1.65,
+          fontFamily: T.fontMono, letterSpacing: 0.1, textWrap: 'pretty',
+        }}>
+          Catalog is a hybrid of one shared Electron runtime and per-URL stub{' '}
+          <span style={{ color: LP.text, fontWeight: 600 }}>.app</span>{' '}
+          bundles. Each stub is ~33KB on disk thanks to APFS copy-on-write — so 50 apps cost the same as 1.
+          Open source, MIT, personal use.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+// ─── Footer ───────────────────────────────────────────────────────────────────
+function Footer() {
+  return (
+    <footer style={{ padding: '64px 32px 80px', borderTop: `0.5px solid ${LP.sep}`, textAlign: 'center' }}>
+      <div style={{ maxWidth: LP.maxW, margin: '0 auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <CatalogIcon size={56} />
+        </div>
+
+        <div style={{ marginTop: 28 }}>
+          <a href={DMG_URL} className="cta-secondary">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <path d="M8 2v9M4.5 7.5L8 11l3.5-3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M3 14h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+            Download Catalog 0.1.0
+          </a>
+          <div style={{
+            marginTop: 10, fontSize: 11, color: LP.text3,
+            fontFamily: T.fontMono, letterSpacing: 0.1,
+          }}>
+            Catalog-0.1.0-arm64.dmg &nbsp;·&nbsp; ~112MB
+          </div>
+        </div>
+
+        <div style={{
+          marginTop: 44,
+          display: 'flex', justifyContent: 'center', alignItems: 'center',
+          gap: 28, flexWrap: 'wrap',
+          fontSize: 13, color: LP.text2,
+        }}>
+          <a href="https://github.com/Daekyo-Jeong" className="link-muted">Built by Daekyo Jeong</a>
+          <span style={{ color: LP.text3 }}>·</span>
+          <a href={REPO_URL} className="link-muted">GitHub</a>
+          <span style={{ color: LP.text3 }}>·</span>
+          <span>MIT, free for personal use</span>
+        </div>
+
+        <div style={{ marginTop: 28, fontSize: 12, color: LP.text3 }}>© 2026 Catalog</div>
+      </div>
+    </footer>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+function LandingPage() {
+  return (
+    <div style={{
+      background: LP.bg, color: LP.text, fontFamily: LP.font, minHeight: '100vh',
+      backgroundImage: 'radial-gradient(circle at 50% -20%, #FAF7F1 0%, #F5F2EC 60%)',
+    }}>
+      <Hero />
+      <BeforeAfter />
+      <FeatureGrid />
+      <HowItWorks />
+      <ArchNote />
+      <Footer />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<LandingPage />);
+</script>
+</body>
+</html>

@@ -124,11 +124,13 @@ function GridCard({ app, size = 72, selected, hovered, menuOpen, onSelect, onDou
           style={{
             position: 'absolute', top: 6, right: 6,
             width: 22, height: 22, borderRadius: 11,
-            background: menuOpen ? T.text : '#fff',
-            color: menuOpen ? '#fff' : T.text,
+            // Closed: pill surface that contrasts with the card in both themes.
+            // Open: invert — T.text bg, T.windowBg icon — stays legible everywhere.
+            background: menuOpen ? T.text : T.controlActive,
+            color: menuOpen ? T.windowBg : T.text,
             boxShadow: menuOpen
               ? '0 0.5px 0 rgba(0,0,0,0.20), 0 2px 6px rgba(0,0,0,0.25)'
-              : '0 0.5px 0 rgba(0,0,0,0.10), 0 1px 3px rgba(0,0,0,0.14)',
+              : `0 0.5px 0 ${T.sep}, 0 1px 3px ${T.sep}, inset 0 0 0 0.5px ${T.sepStrong}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
