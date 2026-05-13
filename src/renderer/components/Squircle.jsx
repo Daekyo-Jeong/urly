@@ -47,7 +47,11 @@ export default function Squircle({ size = 64, bg = '#000', image, onImageError, 
             <image
               href={image}
               x="0" y="0" width={VB_SIZE} height={VB_SIZE}
-              preserveAspectRatio="xMidYMid slice"
+              // `meet` rather than `slice`: we trim transparent padding from
+              // the source PNG during download, so a slightly off-square crop
+              // can happen. Letterboxing onto the white bg is safer than
+              // slicing off a logo edge.
+              preserveAspectRatio="xMidYMid meet"
               onError={onImageError}
             />
           )}

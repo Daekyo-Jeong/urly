@@ -1264,7 +1264,75 @@ async function downloadIcon(iconUrl, destPath, redirectsLeft = 3) {
     throw new Error(`sips conversion ${format}→png failed: ${err.message}`);
   }
   fs.unlinkSync(tmpPath);
+
+  // Many sites ship favicons / apple-touch-icons / manifest icons with
+  // significant transparent padding baked into the PNG (e.g. a 192×192 PNG
+  // where the visible logo only fills the inner ~130×130). When we clip that
+  // into our squircle the designer's padding shows as visible padding *inside*
+  // the squircle, making every icon look small and floaty.
+  //
+  // Detect transparent edges by scanning the alpha channel and crop to the
+  // bounding box of opaque pixels. Pad back to square so the cropped artwork
+  // doesn't stretch when scaled into the squircle.
+  try {
+    trimTransparentEdges(destPath);
+  } catch {
+    // Trimming is best-effort — if it fails (decode error, etc.) keep the
+    // original PNG. The icon will still render, just with its own padding.
+  }
   return destPath;
+}
+
+function trimTransparentEdges(pngPath) {
+  const { nativeImage } = require('electron');
+  const img = nativeImage.createFromPath(pngPath);
+  const { width, height } = img.getSize();
+  if (!width || !height) return;
+
+  // Pixels are BGRA on macOS but the alpha byte is at offset 3 in both layouts.
+  const buf = img.toBitmap();
+  if (buf.length < width * height * 4) return;
+
+  const ALPHA_MIN = 16; // treat below this as fully transparent edge
+  let minX = width, minY = height, maxX = -1, maxY = -1;
+  for (let y = 0; y < height; y++) {
+    const row = y * width * 4;
+    for (let x = 0; x < width; x++) {
+      if (buf[row + x * 4 + 3] >= ALPHA_MIN) {
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+  if (maxX < 0) return; // entirely transparent — leave alone
+
+  // Tight bbox of the visible content.
+  let bx = minX, by = minY;
+  let bw = maxX - minX + 1;
+  let bh = maxY - minY + 1;
+
+  // Pad back to a square (centered on the bbox) so aspect ratio is preserved
+  // when scaled into the squircle. Clamp to image bounds.
+  const side = Math.max(bw, bh);
+  bx = Math.max(0, Math.round(bx - (side - bw) / 2));
+  by = Math.max(0, Math.round(by - (side - bh) / 2));
+  const sw = Math.min(side, width - bx);
+  const sh = Math.min(side, height - by);
+
+  // If the trim wouldn't actually remove a meaningful margin (≥ 2 px on every
+  // side), skip — small odd crops aren't worth a re-encode and might shave
+  // antialiased edges.
+  const removedLeft = bx;
+  const removedTop = by;
+  const removedRight = width - (bx + sw);
+  const removedBottom = height - (by + sh);
+  const minRemoved = Math.min(removedLeft, removedTop, removedRight, removedBottom);
+  if (minRemoved < 2 && Math.max(removedLeft, removedTop, removedRight, removedBottom) < width * 0.03) return;
+
+  const cropped = img.crop({ x: bx, y: by, width: sw, height: sh });
+  fs.writeFileSync(pngPath, cropped.toPNG());
 }
 
 function createCatalogWindow() {
