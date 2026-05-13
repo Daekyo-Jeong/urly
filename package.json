@@ -32,6 +32,7 @@
     "appId": "app.catalog.manager",
     "productName": "Catalog",
     "copyright": "Catalog — personal use",
+    "afterAllArtifactBuild": "scripts/hide-dmg-dotfiles.js",
     "directories": {
       "output": "dist/build"
     },
