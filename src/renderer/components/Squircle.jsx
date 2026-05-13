@@ -14,6 +14,17 @@ const SQUIRCLE_PATH =
   'C 0 19.94 0.68 8.83 4.41 4.41 ' +
   'C 8.14 0 19.26 0 50 0 Z';
 
+// Apple's macOS app icon grid (Big Sur+):
+//   1024 px canvas, 820 px squircle centered, 102 px padding on each side
+//   (102/1024 ≈ 9.96%, so we use 10% in unit space).
+// We render the squircle at 80% of `size` so the shadow has room to render
+// inside the tile bounds and the icon looks the same scale as every other
+// app in the Dock. Without this padding our tiles read as oversized next
+// to native macOS icons.
+const PAD = 12.5;          // each side, in viewBox units
+const SQ_BOX = 100;        // squircle is drawn at 100×100 viewBox coords
+const VB = SQ_BOX + PAD * 2; // 125
+
 // Renders a continuous-corner (Apple HIG squircle) tile.
 // - `image` (URL) — rendered as an SVG <image> clipped to the squircle so the
 //   corners are perfectly trimmed (no background bleeding behind a square favicon).
@@ -24,13 +35,16 @@ const SQUIRCLE_PATH =
 // - `children` — text/icon overlay (e.g. single-letter mark).
 export default function Squircle({ size = 64, bg = '#000', image, onImageError, children, style = {}, shadow = true }) {
   const id = useId();
+  // Visible squircle occupies 80% of `size`; everything sized off the
+  // squircle (not the tile bounding box) so visual ratios stay constant.
+  const innerSize = size * (SQ_BOX / VB);
   return (
     <div style={{
       width: size, height: size, position: 'relative', flexShrink: 0,
       filter: shadow ? 'drop-shadow(0 1px 1px rgba(0,0,0,0.10)) drop-shadow(0 2px 4px rgba(0,0,0,0.08))' : 'none',
       ...style,
     }}>
-      <svg viewBox="0 0 100 100" width={size} height={size} style={{ display: 'block', position: 'absolute', inset: 0 }}>
+      <svg viewBox={`${-PAD} ${-PAD} ${VB} ${VB}`} width={size} height={size} style={{ display: 'block', position: 'absolute', inset: 0 }}>
         <defs>
           <clipPath id={`sq-${id}`}><path d={SQUIRCLE_PATH} /></clipPath>
           <linearGradient id={`hl-${id}`} x1="0" y1="0" x2="0" y2="1">
@@ -56,9 +70,10 @@ export default function Squircle({ size = 64, bg = '#000', image, onImageError, 
         position: 'absolute', inset: 0, display: 'flex',
         alignItems: 'center', justifyContent: 'center',
         color: '#fff', fontFamily: T.font, fontWeight: 600,
-        fontSize: size * 0.5, letterSpacing: -0.6,
+        // Font scaled to the visible squircle (innerSize), not the tile.
+        fontSize: innerSize * 0.5, letterSpacing: -0.6,
         lineHeight: 1,
-        paddingTop: Math.round(size * 0.02),
+        paddingTop: Math.round(innerSize * 0.02),
         boxSizing: 'border-box',
       }}>
         {children}
@@ -76,6 +91,10 @@ export function AppMark({ app, size = 64, shadow = true }) {
   // For an opaque/colored brand mark, white bg works so the favicon shows
   // cleanly to the squircle edges. For the fallback letter-mark we use the
   // brand color so it remains visually distinct.
+  // Mark sized off the visible squircle (80% of `size`), not the tile bounds,
+  // so the letter occupies the same fraction of the icon body as a real Apple
+  // app icon's primary glyph.
+  const innerSize = size * (SQ_BOX / VB);
   return (
     <Squircle
       size={size}
@@ -85,7 +104,7 @@ export function AppMark({ app, size = 64, shadow = true }) {
       onImageError={() => setFailed(true)}
     >
       {!imageUrl && (
-        <span style={{ fontWeight: 600, fontSize: size * 0.52, lineHeight: 1 }}>{mark}</span>
+        <span style={{ fontWeight: 600, fontSize: innerSize * 0.52, lineHeight: 1 }}>{mark}</span>
       )}
     </Squircle>
   );
@@ -93,6 +112,11 @@ export function AppMark({ app, size = 64, shadow = true }) {
 
 export function CatalogIcon({ size = 64 }) {
   const id = useId();
+  // The 4-tile grid is laid out relative to the visible squircle (80% of size)
+  // so the tiles sit at the same proportional positions as in the canonical
+  // assets/icon-source.svg (tiles at 226-798 of a 1024 canvas → ~28%-78% of
+  // the squircle body).
+  const innerSize = size * (SQ_BOX / VB);
   return (
     <Squircle size={size} bg={`url(#cat-grad-${id})`}>
       <svg width={size} height={size} viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0 }}>
@@ -103,14 +127,24 @@ export function CatalogIcon({ size = 64 }) {
           </linearGradient>
         </defs>
       </svg>
-      <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: size * 0.06, padding: size * 0.22 }}>
-        {[0,1,2,3].map(i => (
-          <div key={i} style={{
-            width: size * 0.21, height: size * 0.21, borderRadius: size * 0.05,
-            background: 'rgba(255,255,255,0.95)',
-            boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.04)',
-          }} />
-        ))}
+      <div style={{
+        position: 'absolute', inset: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <div style={{
+          width: innerSize, height: innerSize,
+          display: 'grid', gridTemplateColumns: '1fr 1fr',
+          gap: innerSize * 0.06, padding: innerSize * 0.22,
+          boxSizing: 'border-box',
+        }}>
+          {[0,1,2,3].map(i => (
+            <div key={i} style={{
+              borderRadius: innerSize * 0.05,
+              background: 'rgba(255,255,255,0.95)',
+              boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.04)',
+            }} />
+          ))}
+        </div>
       </div>
     </Squircle>
   );
