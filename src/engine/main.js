@@ -195,6 +195,12 @@ function setupMenu(win) {
         { role: 'zoomOut' },
         { type: 'separator' },
         { role: 'togglefullscreen' },
+        { type: 'separator' },
+        // Devtools — same accelerator macOS Chromium apps use. Without this
+        // entry the shortcut does nothing because Electron doesn't bind it
+        // by default; it's only available via the menu role.
+        { role: 'toggleDevTools', accelerator: 'Alt+Cmd+I' },
+        { role: 'reload', accelerator: 'CmdOrCtrl+R' },
       ],
     },
     {
