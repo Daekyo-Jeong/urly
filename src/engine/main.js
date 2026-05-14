@@ -489,6 +489,12 @@ function createWindow(config, appId) {
   const win = new BrowserWindow({
     ...bounds,
     title: config.name,
+    // macOS Sequoia renders the window title flush-left next to the traffic
+    // lights for any NSWindow without an attached NSToolbar. Electron's
+    // BrowserWindow API doesn't expose NSToolbar attachment, so there's no
+    // titleBarStyle / vibrancy / tabbingMode combination that produces a
+    // centered title. We accept the OS default — it matches the look of
+    // every other toolbar-less macOS app on Sequoia.
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -517,9 +523,13 @@ function createWindow(config, appId) {
 
   win.loadURL(config.url);
 
-  win.webContents.on('page-title-updated', (e, title) => {
-    win.setTitle(title);
-  });
+  // Pin the window title to the user-configured app name. Without preventDefault
+  // Chromium follows the <title> tag — for Google Chat that means it jumps to
+  // "Chat", "Direct messages", "Spaces" etc. depending on the current view,
+  // which defeats the whole point of a site-specific browser identifying as
+  // the user-named app. macOS centers the title in the title bar by default.
+  win.on('page-title-updated', (e) => { e.preventDefault(); });
+  win.setTitle(config.name);
 
   win.webContents.setWindowOpenHandler(({ url, features, disposition, frameName }) => {
     if (!isInternalNavigation(url, config.url)) {
