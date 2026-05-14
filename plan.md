@@ -62,6 +62,7 @@
 
 ### 2-4. 기본 브라우저 기능
 - [x] 윈도우 타이틀을 사용자 지정 앱 이름으로 고정 (페이지 `<title>` 변경 무시 — Google Chat 등 SPA에서 메뉴 이동 시 타이틀 바뀌던 문제 해결)
+- [x] Cmd+W는 창만 닫고 프로세스는 유지 (Dock에 살아있음, 알림 계속 수신, Cmd+Q로만 완전 종료) — macOS 표준 동작
 - [x] 키보드 단축키: 네이티브 앱 메뉴 (Edit: undo/redo/cut/copy/paste/selectAll, View: zoom, Navigate: reload)
 - [x] 스와이프 네비게이션 (트랙패드 + Magic Mouse): wheel 이벤트 감지, 시각적 인디케이터 (화살표 + 파란색 활성 표시), 히스토리 유무에 따라 표시/비표시, 손을 떼면 판정
 - [x] 파일 업로드 다이얼로그 (Chromium 기본 지원, sandbox 모드에서 동작)

@@ -315,9 +315,11 @@ function setupNotifications(win) {
     //   /Applications/Catalog\ Apps/<Name>.app/Contents/MacOS/<Name>
     console.log('[notification] received', JSON.stringify(data));
 
+    const id = data.id || null;
     const title = data.title || app.name;
     const body = data.body || '';
     const bundleId = `com.catalog.app.${appId}`;
+    const sender = e.sender;
 
     // terminal-notifier path. In packaged mode, bootstrap.js extracted it
     // to ~/.catalog/engine/terminal-notifier.app. We canNOT derive this from
@@ -338,12 +340,36 @@ function setupNotifications(win) {
       // measure in case the LaunchServices icon lookup is stale.
       const iconPng = path.join(APPS_DIR, appId, 'icon.png');
       const hasIcon = fs.existsSync(iconPng);
-      const args = ['-title', title, '-message', body, '-sender', bundleId, '-activate', bundleId];
+      // -wait blocks the spawned terminal-notifier until the banner is
+      // interacted with or auto-dismissed, then prints @CONTENTCLICKED /
+      // @ACTIONCLICKED / @CLOSED / @TIMEOUT to stdout. We need that signal
+      // to fire the page-side onclick (Google Chat uses it to navigate to
+      // the originating thread); -activate alone just focuses the SSB.
+      const args = ['-title', title, '-message', body, '-sender', bundleId, '-activate', bundleId, '-wait'];
       if (hasIcon) args.push('-appIcon', iconPng);
       console.log('[notification] terminal-notifier', tnPath, JSON.stringify(args));
       execFile(tnPath, args, (err, stdout, stderr) => {
-        if (err) console.error('[notification] terminal-notifier failed:', err.message, stderr);
-        else console.log('[notification] terminal-notifier ok', stdout.trim());
+        if (err) {
+          console.error('[notification] terminal-notifier failed:', err.message, stderr);
+          return;
+        }
+        const result = stdout.trim();
+        console.log('[notification] terminal-notifier result:', result);
+        if (/CLICKED/.test(result) && id && !sender.isDestroyed()) {
+          // Bring the window forward in addition to delivering the click to
+          // the page — `-activate` already asks LaunchServices to do this,
+          // but on a freshly-launched SSB the BrowserWindow may not have
+          // focus inside the app.
+          try {
+            const win = BrowserWindow.fromWebContents(sender);
+            if (win && !win.isDestroyed()) {
+              if (win.isMinimized()) win.restore();
+              win.show();
+              win.focus();
+            }
+          } catch {}
+          sender.send('notification-click', id);
+        }
       });
       return;
     }
@@ -618,11 +644,43 @@ function createWindow(config, appId) {
   win.webContents.on('dom-ready', () => {
     win.webContents.executeJavaScript(`
       (function() {
-        class CatalogNotification {
+        // EventTarget-compatible shim. Pages like Google Chat do things like
+        //   const n = new Notification(title, { tag, data });
+        //   n.onclick = () => goToThread(data.threadId);
+        // so we have to (a) provide an addEventListener / onclick contract,
+        // (b) actually fire 'click' on the right instance when the user taps
+        // the banner. Click delivery is routed via __catalogBridge — main
+        // process gets the click signal from terminal-notifier -wait and
+        // sends 'notification-click' IPC with the same id we minted here.
+        class CatalogNotification extends EventTarget {
           constructor(title, options) {
+            super();
+            this.title = title;
+            this.body = (options && options.body) || '';
+            this.tag = (options && options.tag) || '';
+            this.data = (options && options.data) !== undefined ? options.data : null;
+            this._onclick = null;
+            this._id = 'n_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
             if (window.__catalogBridge) {
-              window.__catalogBridge.showNotification(title, (options && options.body) || '');
+              window.__catalogBridge.showNotification(this._id, title, this.body);
+              this._unsubscribe = window.__catalogBridge.onNotificationClick(this._id, () => {
+                const ev = new Event('click');
+                // 'this' is the notification instance; window.focus mirrors
+                // browser behavior (browser auto-focuses tab on banner click,
+                // which is the navigation cue most SPA handlers depend on).
+                try { window.focus(); } catch (e) {}
+                if (typeof this._onclick === 'function') {
+                  try { this._onclick.call(this, ev); } catch (e) { console.error(e); }
+                }
+                this.dispatchEvent(ev);
+              });
             }
+          }
+          get onclick() { return this._onclick; }
+          set onclick(fn) { this._onclick = fn; }
+          close() {
+            if (this._unsubscribe) { try { this._unsubscribe(); } catch (e) {} }
+            this._onclick = null;
           }
           static get permission() { return 'granted'; }
           static requestPermission(cb) {
@@ -1569,7 +1627,25 @@ if (!appId) {
     }
   });
 
+  // macOS convention: Cmd+W closes the window but the app stays alive in
+  // the Dock so the user can reopen it (and so that any background tasks
+  // — notifications, push subscriptions, OAuth refresh — keep running).
+  // The process exits only on Cmd+Q (app.quit) or an explicit "Quit" menu
+  // selection. This mirrors how Chrome / Safari / Mail / Slack behave on
+  // macOS, and is what gives SSBs their "passive notifier in the Dock"
+  // feel without us having to write a separate background daemon.
   app.on('window-all-closed', () => {
-    app.quit();
+    // intentionally do not quit — let the user reopen via Dock click
+  });
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      try {
+        const config = loadAppConfig(appId);
+        createWindow(config, appId);
+      } catch (err) {
+        console.error(`Failed to reopen window: ${err.message}`);
+      }
+    }
   });
 }
