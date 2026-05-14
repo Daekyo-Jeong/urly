@@ -52,7 +52,9 @@
 
 ### 2-2. 알림
 - [x] Web Notifications API 권한 요청 처리 (preload + contextBridge로 IPC 연결)
-- [x] macOS 알림 센터 연동 (osascript 방식 — Electron Notification은 미서명 앱에서 미동작하여 대체)
+- [x] macOS 알림 센터 연동 — ad-hoc 서명 stub은 `UNUserNotificationCenter` 권한을 못 받으므로, 번들된 `terminal-notifier.app`을 helper로 두고 `-sender com.catalog.app.<appId>`로 SSB 아이콘 + 클릭 활성화까지 위임
+- [x] 알림 클릭 시 해당 SSB로 포커스 이동 (`-activate` 플래그)
+- [x] 알림 아이콘이 SSB 아이콘으로 표시 (이전 osascript 방식의 Script Editor 아이콘 문제 해결)
 
 ### 2-3. 다운로드
 - [x] `will-download` 이벤트 핸들링
@@ -68,7 +70,7 @@
 ### 2-5. 검증
 - [x] Google, GitHub, Notion 3개 서비스 동시 실행 확인
 - [x] Google OAuth 로그인 흐름 테스트
-- [x] 알림 수신 테스트 (osascript 기반 macOS 알림 확인)
+- [x] 알림 수신 테스트 (terminal-notifier 기반, SSB 아이콘 및 클릭 활성화 확인)
 - [x] 파일 다운로드 테스트 (~/Downloads에 파일 저장 확인)
 - [x] 외부 링크 클릭 → 시스템 브라우저 전환 확인
 - [x] 외부 링크 처리 로직 단위 테스트 (8/8 통과)

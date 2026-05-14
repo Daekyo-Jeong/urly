@@ -315,51 +315,58 @@ function setupNotifications(win) {
     //   /Applications/Catalog\ Apps/<Name>.app/Contents/MacOS/<Name>
     console.log('[notification] received', JSON.stringify(data));
 
-    const { Notification } = require('electron');
-    if (!Notification.isSupported()) {
-      console.log('[notification] Notification.isSupported() === false, falling back to osascript');
-      const title = (data.title || app.name).replace(/"/g, '\\"');
-      const body = (data.body || '').replace(/"/g, '\\"');
-      execFile('osascript', ['-e', `display notification "${body}" with title "${title}"`]);
+    const title = data.title || app.name;
+    const body = data.body || '';
+    const bundleId = `com.catalog.app.${appId}`;
+
+    // terminal-notifier path. In packaged mode, bootstrap.js extracted it
+    // to ~/.catalog/engine/terminal-notifier.app. We canNOT derive this from
+    // app.getAppPath() inside an SSB stub — that returns the stub's symlinked
+    // app.asar path under /Applications/Catalog Apps/<Name>.app/, not the
+    // engine dir. Use the known absolute path instead. In dev, fall back to
+    // the checked-in vendor copy.
+    const candidates = [
+      path.join(CATALOG_DIR, 'engine', 'terminal-notifier.app', 'Contents', 'MacOS', 'terminal-notifier'),
+      path.join(__dirname, '..', '..', 'vendor', 'terminal-notifier.app', 'Contents', 'MacOS', 'terminal-notifier'),
+    ];
+    const tnPath = candidates.find(p => fs.existsSync(p));
+
+    if (tnPath) {
+      // -sender makes the banner show with the SSB's icon (resolved by
+      // LaunchServices from the stub's CFBundleIdentifier) and click activates
+      // the SSB. -appIcon overlays the PNG explicitly as a belt-and-suspenders
+      // measure in case the LaunchServices icon lookup is stale.
+      const iconPng = path.join(APPS_DIR, appId, 'icon.png');
+      const hasIcon = fs.existsSync(iconPng);
+      const args = ['-title', title, '-message', body, '-sender', bundleId, '-activate', bundleId];
+      if (hasIcon) args.push('-appIcon', iconPng);
+      console.log('[notification] terminal-notifier', tnPath, JSON.stringify(args));
+      execFile(tnPath, args, (err, stdout, stderr) => {
+        if (err) console.error('[notification] terminal-notifier failed:', err.message, stderr);
+        else console.log('[notification] terminal-notifier ok', stdout.trim());
+      });
       return;
     }
 
-    const iconPath = path.join(APPS_DIR, appId, 'icon.icns');
-    const hasIcon = fs.existsSync(iconPath);
-    console.log('[notification] iconPath', iconPath, 'exists:', hasIcon);
-
-    try {
-      const notification = new Notification({
-        title: data.title || app.name,
-        body: data.body || '',
-        icon: hasIcon ? iconPath : undefined,
-        silent: false,
-      });
-
-      notification.on('show', () => console.log('[notification] shown'));
-      notification.on('failed', (_e, error) => console.error('[notification] failed:', error));
-      notification.on('close', () => console.log('[notification] closed'));
-
-      notification.on('click', () => {
-        console.log('[notification] clicked');
-        const focusable = BrowserWindow.getAllWindows().find(w => !w.isDestroyed());
-        if (focusable) {
-          if (focusable.isMinimized()) focusable.restore();
-          focusable.show();
-          focusable.focus();
-        }
-        app.focus({ steal: true });
-      });
-
-      notification.show();
-      console.log('[notification] show() called');
-    } catch (err) {
-      console.error('[notification] threw:', err.message, err.stack);
-      // Last-resort fallback
-      const title = (data.title || app.name).replace(/"/g, '\\"');
-      const body = (data.body || '').replace(/"/g, '\\"');
-      execFile('osascript', ['-e', `display notification "${body}" with title "${title}"`]);
+    // Fallback chain when terminal-notifier is missing (shouldn't happen in
+    // a properly extracted engine). Try Electron's built-in Notification first,
+    // then osascript — both lose the SSB icon, but at least the banner appears.
+    console.warn('[notification] terminal-notifier not found, falling back');
+    const { Notification } = require('electron');
+    if (Notification.isSupported()) {
+      try {
+        const iconIcns = path.join(APPS_DIR, appId, 'icon.icns');
+        const n = new Notification({ title, body, icon: fs.existsSync(iconIcns) ? iconIcns : undefined });
+        n.on('failed', (_e, error) => console.error('[notification] electron failed:', error));
+        n.show();
+        return;
+      } catch (err) {
+        console.error('[notification] electron threw:', err.message);
+      }
     }
+    const t = title.replace(/"/g, '\\"');
+    const b = body.replace(/"/g, '\\"');
+    execFile('osascript', ['-e', `display notification "${b}" with title "${t}"`]);
   });
 }
 

@@ -94,6 +94,18 @@ function extractEngine(app) {
     execFileSync('cp', ['-cR', asarUnpackedSrc, path.join(ENGINE_DIR, 'app.asar.unpacked')]);
   }
 
+  // 4. terminal-notifier — bundled helper that owns its own UNUserNotification
+  //    permission (ad-hoc signed, stable bundle id fr.julienxx.oss.terminal-notifier).
+  //    Ad-hoc signed stubs can't be granted notification permission by macOS,
+  //    so we shell out to this helper with `-sender com.catalog.app.<appId>`
+  //    which makes the banner appear with the stub's icon and click-activate
+  //    the stub. The .app is bundled inside Catalog.app's Resources via
+  //    electron-builder extraResources.
+  const tnSrc = path.join(contentsDir, 'Resources', 'terminal-notifier.app');
+  if (fs.existsSync(tnSrc)) {
+    execFileSync('cp', ['-cR', tnSrc, path.join(ENGINE_DIR, 'terminal-notifier.app')]);
+  }
+
   fs.writeFileSync(VERSION_FILE, getRuntimeVersion(app));
 }
 
