@@ -1,105 +1,116 @@
 #!/usr/bin/env bash
-# Catalog — one-line installer
+# Catalog one-line installer.
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/Daekyo-Jeong/catalog/main/install.sh | bash
 #
 # What it does:
-#   1. Verifies you're on macOS arm64 (Apple Silicon)
+#   1. Verifies macOS + Apple Silicon
 #   2. Downloads the latest DMG from GitHub Releases
-#   3. Mounts it, copies Catalog.app to /Applications
+#   3. Mounts it, copies Catalog.app to /Applications via ditto
 #   4. Strips com.apple.quarantine so Gatekeeper doesn't block first launch
-#   5. Unmounts, cleans up, and launches Catalog
+#   5. Detaches the DMG cleanly, then opens Catalog
+#
+# Plain ASCII only (no curly quotes, no ellipsis) so the script survives any
+# transcoding step between curl and bash.
 
-set -euo pipefail
+set -eo pipefail
 
 REPO="Daekyo-Jeong/catalog"
 APP_NAME="Catalog.app"
 INSTALL_DIR="/Applications"
+TMP=""
+MOUNT_POINT=""
 
-# ── tiny logger ───────────────────────────────────────────────────────
-c_dim="\033[2m"; c_bold="\033[1m"; c_green="\033[32m"; c_red="\033[31m"; c_reset="\033[0m"
-say() { printf "${c_bold}%s${c_reset}\n" "$1"; }
-note() { printf "${c_dim}%s${c_reset}\n" "$1"; }
-err() { printf "${c_red}✗ %s${c_reset}\n" "$1" >&2; }
-ok() { printf "${c_green}✓ %s${c_reset}\n" "$1"; }
+c_bold=$'\033[1m'; c_dim=$'\033[2m'; c_green=$'\033[32m'; c_red=$'\033[31m'; c_reset=$'\033[0m'
+say()  { printf "%s%s%s\n" "$c_bold"  "$1" "$c_reset"; }
+note() { printf "%s%s%s\n" "$c_dim"   "$1" "$c_reset"; }
+ok()   { printf "%s[ok] %s%s\n" "$c_green" "$1" "$c_reset"; }
+err()  { printf "%s[error] %s%s\n" "$c_red" "$1" "$c_reset" >&2; }
 
-# ── pre-flight ────────────────────────────────────────────────────────
-[[ "$(uname -s)" == "Darwin" ]] || { err "macOS only."; exit 1; }
-ARCH=$(uname -m)
-if [[ "$ARCH" != "arm64" ]]; then
-  err "Apple Silicon (M1+) required. Your machine reports: $ARCH"
-  err "Intel Macs aren't supported in this release."
+# Cleanup runs on ANY exit. Detach the mounted DMG first so the next rm -rf
+# only ever touches our /tmp dir (writable), never the read-only mountpoint.
+cleanup() {
+  if [ -n "$MOUNT_POINT" ] && [ -d "$MOUNT_POINT" ]; then
+    /usr/bin/hdiutil detach "$MOUNT_POINT" -quiet -force >/dev/null 2>&1 || true
+  fi
+  if [ -n "$TMP" ] && [ -d "$TMP" ]; then
+    rm -rf "$TMP" 2>/dev/null || true
+  fi
+}
+trap cleanup EXIT
+
+# Pre-flight
+if [ "$(uname -s)" != "Darwin" ]; then
+  err "macOS only."
+  exit 1
+fi
+ARCH="$(uname -m)"
+if [ "$ARCH" != "arm64" ]; then
+  err "Apple Silicon (M1/M2/M3) required. This machine reports: $ARCH"
+  err "Intel Macs are not supported in this release."
   exit 1
 fi
 
-# ── find latest release asset ─────────────────────────────────────────
-say "Looking up latest Catalog release…"
+# Resolve the latest release's DMG URL
+say "Looking up latest Catalog release..."
 API="https://api.github.com/repos/${REPO}/releases/latest"
-ASSET_URL=$(curl -fsSL "$API" \
+ASSET_URL="$(curl -fsSL "$API" \
   | grep -E '"browser_download_url".*\.dmg"' \
-  | head -1 \
-  | sed -E 's/.*"(https:[^"]+\.dmg)".*/\1/')
+  | head -n 1 \
+  | sed -E 's/.*"(https:[^"]+\.dmg)".*/\1/')"
 
-if [[ -z "${ASSET_URL:-}" ]]; then
-  err "Couldn't find a .dmg asset on the latest release."
+if [ -z "$ASSET_URL" ]; then
+  err "Could not find a .dmg asset on the latest release."
   err "Check https://github.com/${REPO}/releases"
   exit 1
 fi
 
-DMG_NAME=$(basename "$ASSET_URL")
+DMG_NAME="$(basename "$ASSET_URL")"
 note "Found: $DMG_NAME"
 
-# ── download ──────────────────────────────────────────────────────────
-TMP=$(mktemp -d)
-trap 'rm -rf "$TMP"' EXIT
-
-say "Downloading…"
+# Download
+TMP="$(mktemp -d -t catalog-install)"
+say "Downloading..."
 curl -fL --progress-bar "$ASSET_URL" -o "$TMP/$DMG_NAME"
 
-# ── mount ─────────────────────────────────────────────────────────────
-say "Mounting DMG…"
+# Mount
 MOUNT_POINT="$TMP/mnt"
 mkdir -p "$MOUNT_POINT"
-hdiutil attach "$TMP/$DMG_NAME" -nobrowse -mountpoint "$MOUNT_POINT" -quiet
+say "Mounting DMG..."
+/usr/bin/hdiutil attach "$TMP/$DMG_NAME" -nobrowse -readonly -mountpoint "$MOUNT_POINT" -quiet
 
-# ── copy to /Applications ─────────────────────────────────────────────
 SRC="$MOUNT_POINT/$APP_NAME"
 DEST="$INSTALL_DIR/$APP_NAME"
 
-if [[ ! -d "$SRC" ]]; then
+if [ ! -d "$SRC" ]; then
   err "$APP_NAME not found inside the DMG."
-  hdiutil detach "$MOUNT_POINT" -quiet || true
   exit 1
 fi
 
-if [[ -d "$DEST" ]]; then
-  note "Replacing existing installation at $DEST"
-  # Don't trash the user's userdata at ~/.catalog — that lives outside the .app
+# Replace any existing install (userdata at ~/.catalog is preserved separately)
+if [ -d "$DEST" ]; then
+  note "Replacing existing $DEST"
   rm -rf "$DEST"
 fi
 
-say "Installing to $INSTALL_DIR…"
-# `ditto` preserves macOS metadata (icons, code signature, xattrs) better than `cp -R`
-ditto "$SRC" "$DEST"
+say "Installing to $INSTALL_DIR ..."
+# ditto preserves macOS metadata (xattrs, ad-hoc signature, symlinks) better
+# than cp -R.
+/usr/bin/ditto "$SRC" "$DEST"
 
-# ── unmount ───────────────────────────────────────────────────────────
-hdiutil detach "$MOUNT_POINT" -quiet
+# Detach IMMEDIATELY after copy -- before any of the post-install steps run,
+# so a failure there doesn't leave the volume mounted.
+/usr/bin/hdiutil detach "$MOUNT_POINT" -quiet
+MOUNT_POINT=""
 
-# ── strip Gatekeeper quarantine ───────────────────────────────────────
-# This is the key step that lets unsigned apps launch without the
-# "Catalog is damaged" warning. Safe — we're only clearing flags on the
-# .app we just installed.
-say "Clearing quarantine attribute…"
-xattr -cr "$DEST"
+# Strip Gatekeeper quarantine so the unsigned bundle launches without the
+# "Catalog is damaged" warning.
+say "Clearing quarantine attribute..."
+/usr/bin/xattr -cr "$DEST"
 
 ok "Catalog installed at $DEST"
 echo ""
-
-# ── launch ────────────────────────────────────────────────────────────
-say "Launching Catalog…"
-open "$DEST"
-
-echo ""
-ok "All done. Catalog should be opening now."
-note "If you ever need to reinstall, re-run this command."
+say "Launching Catalog..."
+/usr/bin/open "$DEST"
+ok "Done."
