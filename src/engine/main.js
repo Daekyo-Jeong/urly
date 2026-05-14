@@ -311,15 +311,13 @@ function setupNotifications(win) {
   ipcMain.on('go-forward', () => { if (win.webContents.canGoForward()) win.webContents.goForward(); });
 
   ipcMain.on('show-notification', (e, data) => {
-    // Use Electron's native Notification API. macOS draws the alert with the
-    // CALLING bundle's icon (read from CFBundleIconFile in our stub's
-    // Info.plist), so the user sees their per-app icon instead of Script
-    // Editor's. Clicking the banner activates THIS app rather than osascript.
-    //
-    // Falls back to osascript only if the system has no notification support,
-    // which shouldn't happen on supported macOS versions.
+    // Logs go to stderr — visible when the stub is launched from terminal:
+    //   /Applications/Catalog\ Apps/<Name>.app/Contents/MacOS/<Name>
+    console.log('[notification] received', JSON.stringify(data));
+
     const { Notification } = require('electron');
     if (!Notification.isSupported()) {
+      console.log('[notification] Notification.isSupported() === false, falling back to osascript');
       const title = (data.title || app.name).replace(/"/g, '\\"');
       const body = (data.body || '').replace(/"/g, '\\"');
       execFile('osascript', ['-e', `display notification "${body}" with title "${title}"`]);
@@ -327,31 +325,41 @@ function setupNotifications(win) {
     }
 
     const iconPath = path.join(APPS_DIR, appId, 'icon.icns');
-    const notification = new Notification({
-      title: data.title || app.name,
-      body: data.body || '',
-      // Explicit icon as belt-and-suspenders — macOS already uses the bundle's
-      // CFBundleIcon, but if the stub was installed without proper signing the
-      // explicit path keeps the icon correct.
-      icon: fs.existsSync(iconPath) ? iconPath : undefined,
-      silent: false,
-    });
+    const hasIcon = fs.existsSync(iconPath);
+    console.log('[notification] iconPath', iconPath, 'exists:', hasIcon);
 
-    // Banner click → bring the SSB window back to the foreground. Without
-    // this handler the click does nothing useful (macOS would activate the
-    // app by default, but if the window is minimized / on another space we
-    // also restore it).
-    notification.on('click', () => {
-      const focusable = BrowserWindow.getAllWindows().find(w => !w.isDestroyed());
-      if (focusable) {
-        if (focusable.isMinimized()) focusable.restore();
-        focusable.show();
-        focusable.focus();
-      }
-      app.focus({ steal: true });
-    });
+    try {
+      const notification = new Notification({
+        title: data.title || app.name,
+        body: data.body || '',
+        icon: hasIcon ? iconPath : undefined,
+        silent: false,
+      });
 
-    notification.show();
+      notification.on('show', () => console.log('[notification] shown'));
+      notification.on('failed', (_e, error) => console.error('[notification] failed:', error));
+      notification.on('close', () => console.log('[notification] closed'));
+
+      notification.on('click', () => {
+        console.log('[notification] clicked');
+        const focusable = BrowserWindow.getAllWindows().find(w => !w.isDestroyed());
+        if (focusable) {
+          if (focusable.isMinimized()) focusable.restore();
+          focusable.show();
+          focusable.focus();
+        }
+        app.focus({ steal: true });
+      });
+
+      notification.show();
+      console.log('[notification] show() called');
+    } catch (err) {
+      console.error('[notification] threw:', err.message, err.stack);
+      // Last-resort fallback
+      const title = (data.title || app.name).replace(/"/g, '\\"');
+      const body = (data.body || '').replace(/"/g, '\\"');
+      execFile('osascript', ['-e', `display notification "${body}" with title "${title}"`]);
+    }
   });
 }
 

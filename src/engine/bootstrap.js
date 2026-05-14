@@ -39,7 +39,16 @@ function getInstalledVersion() {
 }
 
 function getRuntimeVersion(app) {
-  return `${app.getVersion()}-electron-${process.versions.electron}`;
+  // Include the source app.asar's mtime in the version key. Without this any
+  // rebuild that keeps the same package.json version + Electron version would
+  // be considered "already installed" and `ensureEngine()` would skip
+  // re-extraction, leaving stubs pointing at stale engine code. With the
+  // mtime, every fresh build forces a fresh extraction.
+  const catalogBundle = getCatalogBundle();
+  const asarSrc = path.join(catalogBundle, 'Contents', 'Resources', 'app.asar');
+  let mtime = 0;
+  try { mtime = Math.floor(fs.statSync(asarSrc).mtimeMs); } catch {}
+  return `${app.getVersion()}-electron-${process.versions.electron}-${mtime}`;
 }
 
 // Extract Catalog.app's runtime to ~/.catalog/engine/. Idempotent.
