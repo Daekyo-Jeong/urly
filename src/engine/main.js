@@ -305,10 +305,47 @@ function setupNotifications(win) {
   ipcMain.on('go-forward', () => { if (win.webContents.canGoForward()) win.webContents.goForward(); });
 
   ipcMain.on('show-notification', (e, data) => {
-    const title = (data.title || app.name).replace(/"/g, '\\"');
-    const body = (data.body || '').replace(/"/g, '\\"');
-    const script = `display notification "${body}" with title "${title}"`;
-    execFile('osascript', ['-e', script]);
+    // Use Electron's native Notification API. macOS draws the alert with the
+    // CALLING bundle's icon (read from CFBundleIconFile in our stub's
+    // Info.plist), so the user sees their per-app icon instead of Script
+    // Editor's. Clicking the banner activates THIS app rather than osascript.
+    //
+    // Falls back to osascript only if the system has no notification support,
+    // which shouldn't happen on supported macOS versions.
+    const { Notification } = require('electron');
+    if (!Notification.isSupported()) {
+      const title = (data.title || app.name).replace(/"/g, '\\"');
+      const body = (data.body || '').replace(/"/g, '\\"');
+      execFile('osascript', ['-e', `display notification "${body}" with title "${title}"`]);
+      return;
+    }
+
+    const iconPath = path.join(APPS_DIR, appId, 'icon.icns');
+    const notification = new Notification({
+      title: data.title || app.name,
+      body: data.body || '',
+      // Explicit icon as belt-and-suspenders — macOS already uses the bundle's
+      // CFBundleIcon, but if the stub was installed without proper signing the
+      // explicit path keeps the icon correct.
+      icon: fs.existsSync(iconPath) ? iconPath : undefined,
+      silent: false,
+    });
+
+    // Banner click → bring the SSB window back to the foreground. Without
+    // this handler the click does nothing useful (macOS would activate the
+    // app by default, but if the window is minimized / on another space we
+    // also restore it).
+    notification.on('click', () => {
+      const focusable = BrowserWindow.getAllWindows().find(w => !w.isDestroyed());
+      if (focusable) {
+        if (focusable.isMinimized()) focusable.restore();
+        focusable.show();
+        focusable.focus();
+      }
+      app.focus({ steal: true });
+    });
+
+    notification.show();
   });
 }
 
