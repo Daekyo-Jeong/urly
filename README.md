@@ -40,34 +40,35 @@ The engine reads `CatalogAppID` from its parent bundle's `Info.plist` to know wh
 
 ## Installation
 
-The DMG is **not code-signed** (personal use, no Apple Developer Program
-membership). macOS Gatekeeper will block the first launch with
-*"Catalog is damaged and can't be opened"*. That message is misleading —
-the app isn't damaged, it's just unsigned and carries the
-`com.apple.quarantine` extended attribute from the download.
+**One line — recommended**
 
-Pick whichever is faster for you:
-
-**Terminal one-liner**
+Paste this into Terminal. It downloads the latest release, installs Catalog
+into `/Applications`, strips the Gatekeeper quarantine flag (the app isn't
+code-signed, so macOS would otherwise refuse to launch it), and opens the app.
 
 ```bash
-xattr -cr /Applications/Catalog.app
+curl -fsSL https://raw.githubusercontent.com/Daekyo-Jeong/catalog/main/install.sh | bash
 ```
 
-Strips the quarantine attribute. Then Catalog opens normally on every
-subsequent launch.
+Apple Silicon (M1/M2/M3) only. Intel Macs aren't supported.
 
-**Finder route**
+---
 
-1. In Applications, **right-click** `Catalog.app` → **Open**
-2. In the warning sheet, click **Open** again
-3. macOS remembers the choice — double-click works from now on
+**If you'd rather install manually**
 
-If the right-click route is still blocked (macOS Sequoia 15+), use:
+Download the DMG from the latest release, drag `Catalog.app` to your
+Applications folder, then **one** of the following so macOS Gatekeeper lets
+the (unsigned) app launch:
 
-> System Settings → **Privacy & Security** → scroll to "Catalog was
-> blocked from use because it is not from an identified developer"
-> → **Open Anyway**
+| Option | Command / steps |
+|--------|------|
+| Terminal | `xattr -cr /Applications/Catalog.app` |
+| Finder | Right-click `Catalog.app` → **Open** → confirm in the warning sheet |
+| System Settings (Sequoia+) | **Privacy & Security** → scroll to *"Catalog was blocked…"* → **Open Anyway** |
+
+The message *"Catalog is damaged and can't be opened"* is misleading — the
+app isn't damaged, it's just unsigned. We don't publish through the Apple
+Developer Program ($99/year) since this is a personal-use tool.
 
 ## Development
 
