@@ -38,6 +38,37 @@ A personal-use WebCatalog alternative. Hybrid architecture: one shared Electron 
 
 The engine reads `CatalogAppID` from its parent bundle's `Info.plist` to know which app to launch.
 
+## Installation
+
+The DMG is **not code-signed** (personal use, no Apple Developer Program
+membership). macOS Gatekeeper will block the first launch with
+*"Catalog is damaged and can't be opened"*. That message is misleading —
+the app isn't damaged, it's just unsigned and carries the
+`com.apple.quarantine` extended attribute from the download.
+
+Pick whichever is faster for you:
+
+**Terminal one-liner**
+
+```bash
+xattr -cr /Applications/Catalog.app
+```
+
+Strips the quarantine attribute. Then Catalog opens normally on every
+subsequent launch.
+
+**Finder route**
+
+1. In Applications, **right-click** `Catalog.app` → **Open**
+2. In the warning sheet, click **Open** again
+3. macOS remembers the choice — double-click works from now on
+
+If the right-click route is still blocked (macOS Sequoia 15+), use:
+
+> System Settings → **Privacy & Security** → scroll to "Catalog was
+> blocked from use because it is not from an identified developer"
+> → **Open Anyway**
+
 ## Development
 
 ```bash
