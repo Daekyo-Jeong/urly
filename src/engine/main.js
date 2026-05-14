@@ -547,7 +547,15 @@ function createWindow(config, appId) {
   const acceptLanguages = 'ko-KR,ko;q=0.9,en-US;q=0.7,en;q=0.5';
   win.webContents.session.setUserAgent(cleanUa, acceptLanguages);
 
-  win.loadURL(config.url);
+  // Cross-SSB shared identity-provider cookies. We import accounts.google.com
+  // cookies from the shared pool before loadURL so Google's account chooser
+  // shows accounts the user logged into in *other* SSBs, then keep the pool
+  // in sync as the user adds/removes accounts here.
+  const { importPoolIntoSession, attachWriteBack } = require('./sharedCookies');
+  attachWriteBack(win.webContents.session);
+  importPoolIntoSession(win.webContents.session)
+    .catch(err => console.warn('[sharedCookies] import failed:', err.message))
+    .finally(() => { win.loadURL(config.url); });
 
   // Pin the window title to the user-configured app name. Without preventDefault
   // Chromium follows the <title> tag — for Google Chat that means it jumps to
