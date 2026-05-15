@@ -1,6 +1,6 @@
 {
   "name": "urly",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Site-Specific Browser Generator for macOS",
   "main": "src/engine/main.js",
   "scripts": {

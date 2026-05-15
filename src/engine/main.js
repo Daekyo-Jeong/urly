@@ -1578,21 +1578,18 @@ if (!appId) {
       }
     });
 
-    // One-shot Catalog → Urly migration. Must run BEFORE ensureEngine so that
-    // ~/.catalog/engine/ doesn't get re-extracted under the old path.
-    try {
-      const migration = require('./migration');
-      const result = migration.run();
-      if (result.migrated) {
-        console.log(`[urly] migrated from Catalog: regenerated ${result.regenerated} stub(s), cleaned ${result.oldStubsRemoved} legacy stub(s)`);
-      }
-    } catch (err) {
-      console.error('Catalog→Urly migration failed:', err.message);
-    }
+    // One-shot Catalog → Urly migration is split around ensureEngine:
+    //   Phase 1 (preEngine): rename ~/.catalog → ~/.urly, drop stale engine dir
+    //   ensureEngine: extract fresh ~/.urly/engine/
+    //   Phase 2 (postEngine): regenerate stubs (needs engine to exist)
+    // Doing it in one shot — pre OR post — breaks one side: pre-only can't
+    // regenerate stubs (engine missing), post-only finds the engine dir
+    // already created and can't move ~/.catalog over it.
+    const migration = require('./migration');
+    let migrationPre = { skipped: 'not-attempted' };
+    try { migrationPre = migration.runPreEngine(); }
+    catch (err) { console.error('Catalog→Urly migration (preEngine) failed:', err.message); }
 
-    // First-run / post-update: extract our bundled Electron runtime to
-    // ~/.urly/engine/ so stubs can keep running even if Urly.app moves
-    // or is deleted. No-op in dev mode.
     try {
       const { ensureEngine } = require('./bootstrap');
       const result = ensureEngine(app);
@@ -1601,6 +1598,15 @@ if (!appId) {
       }
     } catch (err) {
       console.error('Engine bootstrap failed:', err.message);
+    }
+
+    try {
+      const post = migration.runPostEngine(migrationPre);
+      if (post.migrated) {
+        console.log(`[urly] migrated from Catalog: ${post.regenerated} stub(s) regenerated, ${post.oldStubsRemoved} legacy stub(s) cleaned, legacy Catalog.app removed: ${post.legacyAppRemoved}`);
+      }
+    } catch (err) {
+      console.error('Catalog→Urly migration (postEngine) failed:', err.message);
     }
     setupUrlyIPC();
     createUrlyWindow();

@@ -36,12 +36,12 @@ const NEW_INDEX = path.join(NEW_DIR, 'apps.json');
 const OLD_STUBS_DIR = '/Applications/Catalog Apps';
 const MARKER = path.join(NEW_DIR, '.migrated-from-catalog');
 
-function run() {
-  // Marker present → already migrated, nothing to do.
+// Phase 1: rename the user data dir + index, drop the stale engine.
+// MUST run before bootstrap.ensureEngine() — bootstrap creates ~/.urly/engine/,
+// and once that exists `mv ~/.catalog ~/.urly` fails with "target exists".
+function runPreEngine() {
   if (fs.existsSync(MARKER)) return { skipped: 'already-migrated' };
-  // No old data → fresh install, nothing to migrate.
   if (!fs.existsSync(OLD_DIR)) return { skipped: 'no-old-data' };
-  // Both exist → user manually copied one; don't risk merging.
   if (fs.existsSync(NEW_DIR)) {
     return { skipped: 'both-exist', warning: '~/.catalog and ~/.urly both exist — leave alone' };
   }
@@ -54,16 +54,28 @@ function run() {
     fs.renameSync(OLD_INDEX, NEW_INDEX);
   }
 
-  // Old engine dir references the previous bundle layout and asar path. The
-  // bootstrap will rebuild a fresh one into ~/.urly/engine/ on next call.
   const oldEngine = path.join(NEW_DIR, 'engine');
   if (fs.existsSync(oldEngine)) {
     console.log('[migration] removing stale engine dir; bootstrap will re-extract');
     fs.rmSync(oldEngine, { recursive: true, force: true });
   }
 
-  // Regenerate stubs at new location. Delegate to the generator so we don't
-  // duplicate Info.plist / icon-cloning / helper-renaming logic.
+  return { moved: true };
+}
+
+// Phase 2: regenerate stubs + clean up old Catalog Apps + delete legacy
+// Catalog.app. MUST run after bootstrap.ensureEngine() because buildStubApp
+// needs ~/.urly/engine/ to exist (it clones Frameworks from there).
+//
+// We tracked the v0.2.0 release-day bug here: an earlier version of this
+// module did everything in one pass before ensureEngine, so buildStubApp
+// always threw "Urly engine not found" and the user ended up with a moved
+// data dir but zero stubs — apps were "installed" but unlaunchable. Always
+// keep the pre/post split.
+function runPostEngine(preResult) {
+  if (preResult && preResult.skipped) return { skipped: preResult.skipped };
+  if (fs.existsSync(MARKER)) return { skipped: 'already-migrated' };
+
   let regenerated = 0;
   let regenerateFailed = 0;
   try {
@@ -92,13 +104,10 @@ function run() {
     console.warn('[migration] stub regeneration step failed entirely:', err.message);
   }
 
-  // Best-effort cleanup of stale Catalog Apps stubs — they're symlinked into
-  // a dir that no longer exists. Don't fail the migration if perms block.
   let oldStubsRemoved = 0;
   if (fs.existsSync(OLD_STUBS_DIR)) {
     try {
-      const entries = fs.readdirSync(OLD_STUBS_DIR);
-      for (const e of entries) {
+      for (const e of fs.readdirSync(OLD_STUBS_DIR)) {
         try {
           fs.rmSync(path.join(OLD_STUBS_DIR, e), { recursive: true, force: true });
           oldStubsRemoved++;
@@ -108,10 +117,26 @@ function run() {
     } catch {}
   }
 
+  // Delete the legacy Catalog.app too. User installed it manually, but post-
+  // rename it's an inert duplicate that just clutters /Applications and
+  // confuses Spotlight ("which Catalog do I want?"). Best-effort — if the
+  // user has it open or perms are off, skip silently.
+  const legacyApp = '/Applications/Catalog.app';
+  let legacyAppRemoved = false;
+  if (fs.existsSync(legacyApp)) {
+    try {
+      fs.rmSync(legacyApp, { recursive: true, force: true });
+      legacyAppRemoved = true;
+    } catch {}
+  }
+
+  // Only write the marker after the post-engine phase has actually run, so
+  // a crash between phases doesn't leave us with moved data but no marker
+  // (in which case the user would see "no old data" on the retry and we'd
+  // never regenerate stubs).
   fs.writeFileSync(MARKER, new Date().toISOString());
-  console.log(`[migration] done: ${regenerated} stubs regenerated, ${oldStubsRemoved} old stubs cleaned`);
-  console.log('[migration] /Applications/Catalog.app is left in place — delete it manually if you no longer want it');
-  return { migrated: true, regenerated, regenerateFailed, oldStubsRemoved };
+  console.log(`[migration] done: ${regenerated} stubs regenerated, ${oldStubsRemoved} old stubs cleaned, legacy Catalog.app removed: ${legacyAppRemoved}`);
+  return { migrated: true, regenerated, regenerateFailed, oldStubsRemoved, legacyAppRemoved };
 }
 
-module.exports = { run };
+module.exports = { runPreEngine, runPostEngine };
