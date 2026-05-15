@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-<head><title>Catalog Browser Test</title>
+<head><title>Urly Browser Test</title>
 <style>
   body { font-family: -apple-system, sans-serif; max-width: 600px; margin: 40px auto; }
   .section { margin: 20px 0; padding: 16px; border: 1px solid #ddd; border-radius: 8px; }
@@ -11,7 +11,7 @@
 </style>
 </head>
 <body>
-  <h1>Catalog Browser Test</h1>
+  <h1>Urly Browser Test</h1>
 
   <div class="section">
     <h2>1. External Link Test</h2>
@@ -48,16 +48,16 @@
       const perm = await Notification.requestPermission();
       document.getElementById('notification-result').textContent = 'Permission: ' + perm;
       if (perm === 'granted') {
-        new Notification('Catalog Test', { body: 'Notification is working!' });
+        new Notification('Urly Test', { body: 'Notification is working!' });
       }
     }
 
     function testDownload() {
-      const blob = new Blob(['Catalog download test - success!'], { type: 'text/plain' });
+      const blob = new Blob(['Urly download test - success!'], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'catalog-test.txt';
+      a.download = 'urly-test.txt';
       a.click();
       URL.revokeObjectURL(url);
       document.getElementById('download-result').textContent = 'Download triggered. Check ~/Downloads/';

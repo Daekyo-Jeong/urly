@@ -1,7 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 // Map of notification id → click handler. Populated when the injected
-// CatalogNotification registers a handler for itself; consumed when the main
+// UrlyNotification registers a handler for itself; consumed when the main
 // process tells us a specific notification was clicked. Without this routing,
 // `new Notification(...).onclick = () => navigateToChat(id)` would never fire
 // — Chromium's native notification path isn't used (we shell out to
@@ -15,12 +15,12 @@ ipcRenderer.on('notification-click', (_e, id) => {
   }
 });
 
-contextBridge.exposeInMainWorld('__catalogBridge', {
+contextBridge.exposeInMainWorld('__urlyBridge', {
   showNotification: (id, title, body) => {
     ipcRenderer.send('show-notification', { id, title, body });
   },
   // Register a click callback for a specific notification id. Returns an
-  // unregister function so the injected CatalogNotification can clean up
+  // unregister function so the injected UrlyNotification can clean up
   // when GC'd or .close()'d.
   onNotificationClick: (id, cb) => {
     clickListeners.set(id, cb);

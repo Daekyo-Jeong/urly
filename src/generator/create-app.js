@@ -1,4 +1,4 @@
-// Generates a stub .app that runs the shared Catalog engine while showing
+// Generates a stub .app that runs the shared Urly engine while showing
 // its own name in Dock/Cmd+Tab/Spotlight.
 //
 // Strategy:
@@ -7,7 +7,7 @@
 //     the shared engine to each stub's Contents/Frameworks/
 //   - Symlink the engine's app code into Contents/Resources/app (dev) or
 //     Contents/Resources/app.asar (production)
-//   - Store the appId in Info.plist as a custom CatalogAppID key
+//   - Store the appId in Info.plist as a custom UrlyAppID key
 //
 // macOS reads the running binary's containing .app for Dock identity, so the
 // stub's own Info.plist (CFBundleName) drives the display name.
@@ -18,15 +18,15 @@ const os = require('os');
 const plist = require('plist');
 
 const HOME = os.homedir();
-const CATALOG_DIR = path.join(HOME, '.catalog');
-const APPS_DIR = path.join(CATALOG_DIR, 'apps');
-const CATALOG_INDEX = path.join(CATALOG_DIR, 'catalog.json');
-const INSTALL_DIR = '/Applications/Catalog Apps';
+const URLY_DIR = path.join(HOME, '.urly');
+const APPS_DIR = path.join(URLY_DIR, 'apps');
+const URLY_INDEX = path.join(URLY_DIR, 'apps.json');
+const INSTALL_DIR = '/Applications/Urly Apps';
 
-// Locate the shared Catalog engine. Production: ~/.catalog/engine/. Dev:
+// Locate the shared Urly engine. Production: ~/.urly/engine/. Dev:
 // node_modules/electron/dist/ + the project root acting as the app dir.
 function resolveEngine() {
-  const prodEngine = path.join(CATALOG_DIR, 'engine');
+  const prodEngine = path.join(URLY_DIR, 'engine');
   if (fs.existsSync(path.join(prodEngine, 'Electron.app'))) {
     return {
       mode: 'prod',
@@ -47,26 +47,26 @@ function resolveEngine() {
 }
 
 function ensureDirs() {
-  for (const dir of [CATALOG_DIR, APPS_DIR, INSTALL_DIR]) {
+  for (const dir of [URLY_DIR, APPS_DIR, INSTALL_DIR]) {
     fs.mkdirSync(dir, { recursive: true });
   }
 }
 
-function loadCatalog() {
-  if (fs.existsSync(CATALOG_INDEX)) {
-    return JSON.parse(fs.readFileSync(CATALOG_INDEX, 'utf-8'));
+function loadUrly() {
+  if (fs.existsSync(URLY_INDEX)) {
+    return JSON.parse(fs.readFileSync(URLY_INDEX, 'utf-8'));
   }
   return { apps: [] };
 }
 
-function saveCatalog(catalog) {
-  fs.writeFileSync(CATALOG_INDEX, JSON.stringify(catalog, null, 2));
+function saveUrly(urly) {
+  fs.writeFileSync(URLY_INDEX, JSON.stringify(urly, null, 2));
 }
 
 // Derive a filesystem-safe identifier from the app name. The fallback chain
 // matters: an app called "일주일 개인 근무시간 관리" would otherwise produce
 // an empty slug, which then becomes a wildcard for every downstream path
-// (config.json, icon.png, Info.plist's CatalogAppID, the .app bundle
+// (config.json, icon.png, Info.plist's UrlyAppID, the .app bundle
 // directory) and breaks launch.
 function slugify(name, url) {
   // Step 1: keep ASCII alphanumerics from the name itself.
@@ -90,7 +90,7 @@ function slugify(name, url) {
   }
 
   // Step 3: last resort — random 8-char id. Ensures we never write to the
-  // apps/ root and never produce a bundle whose CatalogAppID is empty.
+  // apps/ root and never produce a bundle whose UrlyAppID is empty.
   return 'app-' + require('crypto').randomBytes(4).toString('hex');
 }
 
@@ -100,7 +100,7 @@ function createPlaceholderIcon(destPath) {
 }
 
 // Rename a helper bundle's internal binary + Info.plist to match the stub.
-// `oldBase` = original helper's base name (e.g. "Catalog" or "Electron")
+// `oldBase` = original helper's base name (e.g. "Urly" or "Electron")
 // `newBase` = stub's CFBundleName (e.g. "Notion")
 // `suffix` = "" / " (GPU)" / " (Plugin)" / " (Renderer)"
 function renameHelperInternals(originalApp, newApp, oldBase, newBase, suffix) {
@@ -128,7 +128,7 @@ function renameHelperInternals(originalApp, newApp, oldBase, newBase, suffix) {
 function buildStubApp({ appId, name, url, iconPath }) {
   const engine = resolveEngine();
   if (!fs.existsSync(engine.electronApp)) {
-    throw new Error(`Catalog engine not found at ${engine.electronApp}`);
+    throw new Error(`Urly engine not found at ${engine.electronApp}`);
   }
 
   // Per-app data directory
@@ -181,7 +181,7 @@ function buildStubApp({ appId, name, url, iconPath }) {
   //
   //    Helpers are additionally renamed to match the stub's CFBundleName,
   //    because at launch Electron looks for "<CFBundleName> Helper.app" — if
-  //    the engine ships "Catalog Helper.app" or "Electron Helper.app", a stub
+  //    the engine ships "Urly Helper.app" or "Electron Helper.app", a stub
   //    called "Notion" won't find its helper without rebranding.
   const engineFrameworks = path.join(engine.electronApp, 'Contents', 'Frameworks');
   const { execFileSync } = require('child_process');
@@ -211,12 +211,12 @@ function buildStubApp({ appId, name, url, iconPath }) {
   // 4. Per-app icon
   fs.copyFileSync(icnsPath, path.join(resourcesDir, 'app.icns'));
 
-  // 5. Info.plist — CFBundleName drives Dock display; CatalogAppID lets the
+  // 5. Info.plist — CFBundleName drives Dock display; UrlyAppID lets the
   //    engine resolve which app to load when launched without arguments.
   const info = plist.build({
     CFBundleName: name,
     CFBundleDisplayName: name,
-    CFBundleIdentifier: `com.catalog.app.${appId}`,
+    CFBundleIdentifier: `com.urly.app.${appId}`,
     CFBundleVersion: '1.0.0',
     CFBundleShortVersionString: '1.0.0',
     CFBundlePackageType: 'APPL',
@@ -226,11 +226,11 @@ function buildStubApp({ appId, name, url, iconPath }) {
     LSMinimumSystemVersion: '12.0',
     NSHighResolutionCapable: true,
     LSUIElement: false,
-    CatalogAppID: appId,
+    UrlyAppID: appId,
   });
   fs.writeFileSync(path.join(contentsDir, 'Info.plist'), info);
 
-  // 6. Persist app config — the engine reads this on launch via CatalogAppID
+  // 6. Persist app config — the engine reads this on launch via UrlyAppID
   const config = {
     appId, name, url,
     tags: [],
@@ -264,20 +264,20 @@ function main() {
   const appId = slugify(name);
   const appBundle = buildStubApp({ appId, name, url });
 
-  const catalog = loadCatalog();
-  const existing = catalog.apps.findIndex(a => a.appId === appId);
+  const urly = loadUrly();
+  const existing = urly.apps.findIndex(a => a.appId === appId);
   if (existing >= 0) {
-    catalog.apps[existing] = { appId, name, url, updated: new Date().toISOString() };
+    urly.apps[existing] = { appId, name, url, updated: new Date().toISOString() };
   } else {
-    catalog.apps.push({ appId, name, url, created: new Date().toISOString() });
+    urly.apps.push({ appId, name, url, created: new Date().toISOString() });
   }
-  saveCatalog(catalog);
+  saveUrly(urly);
 
   console.log(`Created: ${appBundle}`);
   console.log(`Engine:  ${resolveEngine().mode} mode`);
 }
 
-module.exports = { buildStubApp, resolveEngine, slugify, INSTALL_DIR, APPS_DIR, CATALOG_INDEX };
+module.exports = { buildStubApp, resolveEngine, slugify, INSTALL_DIR, APPS_DIR, URLY_INDEX };
 
 if (require.main === module) {
   main();

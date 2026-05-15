@@ -1,7 +1,7 @@
 import React from 'react';
 import { T } from '../tokens';
 import Icon from './Icon';
-import { CatalogIcon } from './Squircle';
+import { UrlyIcon } from './Squircle';
 
 export default function Sidebar({ active, counts = {}, tagCounts = {}, settings, onNavigate, onOpenSettings }) {
   const showRecent = settings?.sidebar?.recentlyAdded !== false;
@@ -52,9 +52,9 @@ export default function Sidebar({ active, counts = {}, tagCounts = {}, settings,
         WebkitAppRegion: 'no-drag',
         display: 'flex', alignItems: 'center', gap: 8,
       }}>
-        <CatalogIcon size={24} />
+        <UrlyIcon size={24} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: T.text }}>Catalog</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: T.text }}>Urly</div>
           <div style={{ fontSize: 10.5, color: T.textTertiary }}>v1.0</div>
         </div>
         <div

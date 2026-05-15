@@ -129,7 +129,7 @@ export default function ListView({ apps, onAction }) {
             <div style={{ fontSize: 11, color: T.textTertiary, marginTop: 4, display: 'flex', gap: 10 }}>
               <span>Created {formatDate(selectedApp.created)}</span>
               <span>·</span>
-              <span>Bundle ID app.catalog.{selectedApp.appId}</span>
+              <span>Bundle ID app.urly.{selectedApp.appId}</span>
               <span>·</span>
               <span>{formatSize(selectedApp.dataSize)} user data</span>
             </div>

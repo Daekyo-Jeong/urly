@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-contextBridge.exposeInMainWorld('catalog', {
+contextBridge.exposeInMainWorld('urly', {
   listApps: () => ipcRenderer.invoke('apps:list'),
   createApp: (data) => ipcRenderer.invoke('apps:create', data),
   updateApp: (id, patch) => ipcRenderer.invoke('apps:update', id, patch),

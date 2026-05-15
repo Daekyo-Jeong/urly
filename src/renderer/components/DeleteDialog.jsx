@@ -16,7 +16,7 @@ export default function DeleteDialog({ app, onClose, onDeleted }) {
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      await window.catalog.deleteApp(app.appId, { keepUserData });
+      await window.urly.deleteApp(app.appId, { keepUserData });
       onDeleted?.();
       onClose?.();
     } catch (err) {
@@ -60,7 +60,7 @@ export default function DeleteDialog({ app, onClose, onDeleted }) {
             Delete "{app.name}"?
           </div>
           <div style={{ fontSize: 12.5, color: T.textSecondary, lineHeight: 1.45, marginBottom: 16 }}>
-            The .app bundle in <span style={{ fontFamily: T.fontMono, fontSize: 11.5 }}>/Applications/Catalog&nbsp;Apps</span> will be removed.
+            The .app bundle in <span style={{ fontFamily: T.fontMono, fontSize: 11.5 }}>/Applications/Urly&nbsp;Apps</span> will be removed.
             This action cannot be undone.
           </div>
 

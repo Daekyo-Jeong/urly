@@ -1,4 +1,4 @@
-# Catalog — Implementation Plan
+# Urly — Implementation Plan
 
 ## MVP 1: 엔진 코어 (stub .app 생성 + 실행) ✅
 
@@ -7,11 +7,11 @@
 ### 1-1. 프로젝트 초기 설정
 - [x] Electron 프로젝트 생성 (수동 구성)
 - [x] 디렉토리 구조 확정: `src/engine/`, `src/generator/`, `src/renderer/`
-- [x] `~/.catalog/` 디렉토리 초기화 로직
+- [x] `~/.urly/` 디렉토리 초기화 로직
 
-### 1-2. 공유 런타임 (Catalog Engine)
+### 1-2. 공유 런타임 (Urly Engine)
 - [x] Electron main process: `--app-id`, `--user-data-dir` 인자 파싱
-- [x] `~/.catalog/apps/{app-id}/config.json`에서 URL 읽어 BrowserWindow로 로드
+- [x] `~/.urly/apps/{app-id}/config.json`에서 URL 읽어 BrowserWindow로 로드
 - [x] `--user-data-dir`로 Chromium 프로필 격리
 - [x] 타이틀바에 페이지 제목 표시
 - [x] 창 위치·크기 기억 (config.json에 저장)
@@ -20,7 +20,7 @@
 - [x] Node.js로 .app 번들 구조 생성 (Contents/MacOS/launcher, Contents/Info.plist, Contents/Resources/app.icns)
 - [x] Info.plist 생성 (plist 라이브러리): CFBundleName, CFBundleIdentifier, CFBundleIconFile
 - [x] launcher 셸 스크립트 생성 + 실행 권한 부여 (chmod +x)
-- [x] `/Applications/Catalog Apps/`에 .app 배치
+- [x] `/Applications/Urly Apps/`에 .app 배치
 - [x] 기본 placeholder 아이콘 포함
 
 ### 1-4. 검증
@@ -52,7 +52,7 @@
 
 ### 2-2. 알림
 - [x] Web Notifications API 권한 요청 처리 (preload + contextBridge로 IPC 연결)
-- [x] macOS 알림 센터 연동 — ad-hoc 서명 stub은 `UNUserNotificationCenter` 권한을 못 받으므로, 번들된 `terminal-notifier.app`을 helper로 두고 `-sender com.catalog.app.<appId>`로 SSB 아이콘 + 클릭 활성화까지 위임
+- [x] macOS 알림 센터 연동 — ad-hoc 서명 stub은 `UNUserNotificationCenter` 권한을 못 받으므로, 번들된 `terminal-notifier.app`을 helper로 두고 `-sender com.urly.app.<appId>`로 SSB 아이콘 + 클릭 활성화까지 위임
 - [x] 알림 클릭 시 해당 SSB로 포커스 이동 (`-activate` 플래그)
 - [x] 알림 아이콘이 SSB 아이콘으로 표시 (이전 osascript 방식의 Script Editor 아이콘 문제 해결)
 
@@ -63,7 +63,7 @@
 ### 2-4. 기본 브라우저 기능
 - [x] 윈도우 타이틀을 사용자 지정 앱 이름으로 고정 (페이지 `<title>` 변경 무시 — Google Chat 등 SPA에서 메뉴 이동 시 타이틀 바뀌던 문제 해결)
 - [x] Cmd+W는 창만 닫고 프로세스는 유지 (Dock에 살아있음, 알림 계속 수신, Cmd+Q로만 완전 종료) — macOS 표준 동작
-- [x] SSB간 Google 계정 picker 공유 — `accounts.google.com` 쿠키를 `~/.catalog/shared/google/cookies.json`에 공유 풀로 두고, 각 SSB가 시작 시 import + 변경 시 write-back. Chat SSB에서 로그인한 계정이 Flex SSB의 picker에도 자동 노출
+- [x] SSB간 Google 계정 picker 공유 — `accounts.google.com` 쿠키를 `~/.urly/shared/google/cookies.json`에 공유 풀로 두고, 각 SSB가 시작 시 import + 변경 시 write-back. Chat SSB에서 로그인한 계정이 Flex SSB의 picker에도 자동 노출
 - [x] 키보드 단축키: 네이티브 앱 메뉴 (Edit: undo/redo/cut/copy/paste/selectAll, View: zoom, Navigate: reload)
 - [x] 스와이프 네비게이션 (트랙패드 + Magic Mouse): wheel 이벤트 감지, 시각적 인디케이터 (화살표 + 파란색 활성 표시), 히스토리 유무에 따라 표시/비표시, 손을 떼면 판정
 - [x] 파일 업로드 다이얼로그 (Chromium 기본 지원, sandbox 모드에서 동작)
@@ -137,7 +137,7 @@
 - [x] **Settings 모달** — 사이드바 푸터 톱니바퀴 + Cmd+, 단축키 (앱 메뉴 통합)
   - 액센트 컬러: 8가지 프리셋 + 커스텀 HEX. CSS 변수(`--cat-accent` 등)로 런타임 적용
   - 사이드바 섹션 보이기/숨기기 토글: Recently Added / Favorites / Tags
-- [x] `~/.catalog/settings.json` 영구 저장 + IPC (`settings:get`, `settings:set`)
+- [x] `~/.urly/settings.json` 영구 저장 + IPC (`settings:get`, `settings:set`)
 
 ### 3-7. 추가 개선 (실사용 피드백 반영)
 - [x] 그리드 카드 최대 너비 고정 (160px) — 일정한 그리드 유지
@@ -167,13 +167,13 @@
 
 ### 4-2. 패키징 ✅
 - [x] electron-builder로 카탈로그 관리 앱 패키징 (`npm run build`)
-- [x] 공유 런타임 추출 로직 — `bootstrap.js`로 ~/.catalog/engine/에 Electron.app + app.asar 복사
+- [x] 공유 런타임 추출 로직 — `bootstrap.js`로 ~/.urly/engine/에 Electron.app + app.asar 복사
 - [x] 첫 실행 시 초기 셋업 — 매니저 부팅 시 `ensureEngine` 호출, version.txt로 idempotent 처리
-- [x] DMG 빌드 (Catalog-0.1.0-arm64.dmg, 112MB)
+- [x] DMG 빌드 (Urly-0.1.0-arm64.dmg, 112MB)
 - [x] Helper 자동 리네이밍 — 각 stub의 CFBundleName에 맞춰 `<Name> Helper.app` + 내부 binary/plist 갱신 (electron-builder가 helper를 productName으로 rebrand하므로 필수)
 
 ### 4-3. Dock/Cmd+Tab 앱 이름 표시 해결 ✅
-- [x] Stub .app에 Electron 바이너리 복사 (33KB) + Info.plist에 CatalogAppID 저장
+- [x] Stub .app에 Electron 바이너리 복사 (33KB) + Info.plist에 UrlyAppID 저장
 - [x] main.js가 process.execPath 기준으로 부모 Info.plist 읽어 appId 결정
 - [x] Frameworks (Electron Framework, Helpers, Mantle, ReactiveObjC, Squirrel) **APFS clonefile (`cp -c`)** 복사 — 디스크 공유 + macOS bundle 무결성 통과
 - [x] launcher shell 스크립트 제거, Electron 바이너리 직접 실행
@@ -197,7 +197,7 @@
 
 마케팅/다운로드 페이지 (`landing/index.html`).
 
-- [x] Hero — CatalogIcon, 타이틀, 태그라인, 다운로드 CTA 버튼, GitHub 링크
+- [x] Hero — UrlyIcon, 타이틀, 태그라인, 다운로드 CTA 버튼, GitHub 링크
 - [x] Before/After — 브라우저 탭 vs. 독립 앱 윈도우 비교 mock
 - [x] Feature Grid — 6개 카드 (Spotlight, 세션 격리, macOS chrome, 아이콘 자동 추출, 캐시 초기화, 태그/즐겨찾기)
 - [x] How It Works — 3단계 (URL 붙여넣기 → 추출 중 → Spotlight 실행) mock 포함

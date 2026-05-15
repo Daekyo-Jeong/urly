@@ -33,7 +33,7 @@ export default function EmptyState({ onNewApp }) {
       <p style={{
         margin: '6px 0 18px', fontSize: 13, color: T.textSecondary, lineHeight: 1.5, maxWidth: 340,
       }}>
-        Catalog turns websites into standalone macOS apps you can launch from Spotlight, the Dock, or Cmd&#8209;Tab.
+        Urly turns websites into standalone macOS apps you can launch from Spotlight, the Dock, or Cmd&#8209;Tab.
       </p>
       <div style={{ display: 'flex', gap: 8 }}>
         <Btn kind="primary" icon="plus" size="lg" onClick={onNewApp}>Add Your First App</Btn>

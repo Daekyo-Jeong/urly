@@ -12,7 +12,7 @@ import SettingsModal from './components/SettingsModal';
 import { applyAccent, DEFAULT_ACCENT } from './accent';
 import { applyTheme, DEFAULT_THEME } from './theme';
 
-if (!window.catalog) {
+if (!window.urly) {
   const MOCK_APPS = [
     { appId: 'slack', name: 'Slack', url: 'app.slack.com', color: '#4A154B', mark: 'S', created: '2026-01-15T00:00:00Z', updated: '2026-05-11T00:00:00Z', dataSize: 148897792, tags: ['Work'], favorite: true },
     { appId: 'gmail', name: 'Gmail', url: 'mail.google.com', color: '#D93025', mark: 'M', created: '2026-01-20T00:00:00Z', updated: '2026-05-06T00:00:00Z', dataSize: 39845888, tags: ['Work'], favorite: false },
@@ -30,7 +30,7 @@ if (!window.catalog) {
     theme: DEFAULT_THEME,
     sidebar: { recentlyAdded: true, favorites: true, tags: true, removed: false },
   };
-  window.catalog = {
+  window.urly = {
     listApps: async () => MOCK_APPS.map(a => ({ ...a })),
     createApp: async (d) => { MOCK_APPS.push({ appId: d.name.toLowerCase(), ...d, tags: d.tags || [], favorite: d.favorite || false, created: new Date().toISOString(), updated: new Date().toISOString(), dataSize: 0, mark: d.name[0] }); return d; },
     updateApp: async (id, patch) => { const a = MOCK_APPS.find(x => x.appId === id); if (a) Object.assign(a, patch); },
@@ -71,7 +71,7 @@ export default function App() {
 
   const loadApps = useCallback(async () => {
     try {
-      const list = await window.catalog.listApps();
+      const list = await window.urly.listApps();
       setApps(list);
     } catch (err) {
       console.error('Failed to load apps:', err);
@@ -82,7 +82,7 @@ export default function App() {
 
   const loadSettings = useCallback(async () => {
     try {
-      const s = await window.catalog.getSettings();
+      const s = await window.urly.getSettings();
       setSettings(s);
       applyAccent(s.accentColor || DEFAULT_ACCENT);
       applyTheme(s.theme || DEFAULT_THEME);
@@ -95,8 +95,8 @@ export default function App() {
 
   // Listen for Cmd+, from menu
   useEffect(() => {
-    if (!window.catalog?.onOpenSettings) return;
-    const off = window.catalog.onOpenSettings(() => setShowSettings(true));
+    if (!window.urly?.onOpenSettings) return;
+    const off = window.urly.onOpenSettings(() => setShowSettings(true));
     return off;
   }, []);
 
@@ -140,7 +140,7 @@ export default function App() {
   const handleAction = useCallback(async (action, app) => {
     switch (action) {
       case 'launch':
-        await window.catalog.launchApp(app.appId);
+        await window.urly.launchApp(app.appId);
         break;
       case 'edit':
         setEditApp(app);
@@ -149,18 +149,18 @@ export default function App() {
         setDeleteApp(app);
         break;
       case 'reveal':
-        await window.catalog.revealApp(app.appId);
+        await window.urly.revealApp(app.appId);
         break;
       case 'openInBrowser':
-        await window.catalog.openExternal(app.url.startsWith('http') ? app.url : `https://${app.url}`);
+        await window.urly.openExternal(app.url.startsWith('http') ? app.url : `https://${app.url}`);
         break;
       case 'toggleFavorite': {
-        await window.catalog.updateApp(app.appId, { favorite: !app.favorite });
+        await window.urly.updateApp(app.appId, { favorite: !app.favorite });
         loadApps();
         break;
       }
       case 'refetchIcon': {
-        const result = await window.catalog.refetchIcon(app.appId);
+        const result = await window.urly.refetchIcon(app.appId);
         loadApps();
         if (result?.ok) {
           setToast({ ...app, name: `${app.name} icon refreshed` });
@@ -170,7 +170,7 @@ export default function App() {
         break;
       }
       case 'clearCache': {
-        const result = await window.catalog.clearCache(app.appId, { mode: 'cache' });
+        const result = await window.urly.clearCache(app.appId, { mode: 'cache' });
         loadApps();
         const mb = Math.round((result?.freed || 0) / (1024 * 1024));
         setToast({ ...app, name: `${app.name} cache cleared — ${mb} MB freed` });
@@ -182,7 +182,7 @@ export default function App() {
           `If the app is currently running, it will be closed automatically.`
         );
         if (!ok) break;
-        const result = await window.catalog.clearCache(app.appId, { mode: 'signout' });
+        const result = await window.urly.clearCache(app.appId, { mode: 'signout' });
         loadApps();
         const mb = Math.round((result?.freed || 0) / (1024 * 1024));
         setToast({ ...app, name: `${app.name} signed out — ${mb} MB freed` });
@@ -208,7 +208,7 @@ export default function App() {
     setSettings(next);
     if (next.accentColor) applyAccent(next.accentColor);
     if (next.theme) applyTheme(next.theme);
-    await window.catalog.saveSettings(next);
+    await window.urly.saveSettings(next);
   }, []);
 
   if (loading || !settings) return null;
@@ -283,7 +283,7 @@ export default function App() {
         <Toast
           app={toast}
           onClose={() => setToast(null)}
-          onReveal={() => { window.catalog.revealApp(toast.appId); setToast(null); }}
+          onReveal={() => { window.urly.revealApp(toast.appId); setToast(null); }}
         />
       )}
     </div>

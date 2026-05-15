@@ -1,8 +1,8 @@
-# Catalog
+# Urly
 
 A site-specific browser generator for macOS. Register a URL — get a standalone `.app` you can launch from Spotlight, the Dock, or Cmd+Tab.
 
-A personal-use WebCatalog alternative. Hybrid architecture: one shared Electron runtime + lightweight per-app `.app` bundles.
+A personal-use WebUrly alternative. Hybrid architecture: one shared Electron runtime + lightweight per-app `.app` bundles.
 
 ## Features
 
@@ -14,7 +14,7 @@ A personal-use WebCatalog alternative. Hybrid architecture: one shared Electron 
 ## Architecture
 
 ```
-~/.catalog/
+~/.urly/
   engine/                 ← shared Electron runtime (extracted on first run)
     Electron.app/
     app.asar
@@ -23,31 +23,31 @@ A personal-use WebCatalog alternative. Hybrid architecture: one shared Electron 
     icon.png              ← favicon source
     icon.icns             ← multi-resolution macOS icon
     userdata/             ← Chromium profile (cookies, localStorage, etc.)
-  catalog.json            ← master index
+  apps.json            ← master index
   settings.json           ← accent color + sidebar visibility
 
-/Applications/Catalog Apps/{Name}.app/
+/Applications/Urly Apps/{Name}.app/
   Contents/
     MacOS/{Name}          ← Electron binary copy (~33KB)
     Frameworks/           ← Electron Framework, Helpers (APFS clonefile)
     Resources/
-      app.asar -> ~/.catalog/engine/app.asar
+      app.asar -> ~/.urly/engine/app.asar
       app.icns            ← per-app icon
-    Info.plist            ← CFBundleName=<Name>, CatalogAppID=<appId>
+    Info.plist            ← CFBundleName=<Name>, UrlyAppID=<appId>
 ```
 
-The engine reads `CatalogAppID` from its parent bundle's `Info.plist` to know which app to launch.
+The engine reads `UrlyAppID` from its parent bundle's `Info.plist` to know which app to launch.
 
 ## Installation
 
 **One line — recommended**
 
-Paste this into Terminal. It downloads the latest release, installs Catalog
+Paste this into Terminal. It downloads the latest release, installs Urly
 into `/Applications`, strips the Gatekeeper quarantine flag (the app isn't
 code-signed, so macOS would otherwise refuse to launch it), and opens the app.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Daekyo-Jeong/catalog/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Daekyo-Jeong/urly/main/install.sh | bash
 ```
 
 Apple Silicon (M1/M2/M3) only. Intel Macs aren't supported.
@@ -56,17 +56,17 @@ Apple Silicon (M1/M2/M3) only. Intel Macs aren't supported.
 
 **If you'd rather install manually**
 
-Download the DMG from the latest release, drag `Catalog.app` to your
+Download the DMG from the latest release, drag `Urly.app` to your
 Applications folder, then **one** of the following so macOS Gatekeeper lets
 the (unsigned) app launch:
 
 | Option | Command / steps |
 |--------|------|
-| Terminal | `xattr -cr /Applications/Catalog.app` |
-| Finder | Right-click `Catalog.app` → **Open** → confirm in the warning sheet |
-| System Settings (Sequoia+) | **Privacy & Security** → scroll to *"Catalog was blocked…"* → **Open Anyway** |
+| Terminal | `xattr -cr /Applications/Urly.app` |
+| Finder | Right-click `Urly.app` → **Open** → confirm in the warning sheet |
+| System Settings (Sequoia+) | **Privacy & Security** → scroll to *"Urly was blocked…"* → **Open Anyway** |
 
-The message *"Catalog is damaged and can't be opened"* is misleading — the
+The message *"Urly is damaged and can't be opened"* is misleading — the
 app isn't damaged, it's just unsigned. We don't publish through the Apple
 Developer Program ($99/year) since this is a personal-use tool.
 
@@ -81,7 +81,7 @@ npm run dev               # vite + electron in dev mode
 
 ```bash
 npm run build:icon        # regenerate assets/icon.{svg,png,icns}
-npm run build:app         # produces dist/build/Catalog-*.dmg + Catalog.app
+npm run build:app         # produces dist/build/Urly-*.dmg + Urly.app
 ```
 
 ## Stack

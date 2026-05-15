@@ -103,7 +103,7 @@ export default function RegisterModal({ onClose, onCreated, editApp = null, allT
     if (!url || extractState === 'extracting') return;
     setExtractState('extracting');
     try {
-      const meta = await window.catalog.extractMeta(url);
+      const meta = await window.urly.extractMeta(url);
       setExtractInfo(meta);
       if (meta.title && !name) setName(meta.title);
       setExtractState('done');
@@ -113,7 +113,7 @@ export default function RegisterModal({ onClose, onCreated, editApp = null, allT
   }, [url, name, extractState]);
 
   const handlePickIcon = async () => {
-    const filePath = await window.catalog.pickIcon();
+    const filePath = await window.urly.pickIcon();
     if (filePath) setCustomIconPath(filePath);
   };
 
@@ -127,12 +127,12 @@ export default function RegisterModal({ onClose, onCreated, editApp = null, allT
         normalizedUrl = `https://${normalizedUrl}`;
       }
       if (isEdit) {
-        await window.catalog.updateApp(editApp.appId, {
+        await window.urly.updateApp(editApp.appId, {
           name, url: normalizedUrl, tags, favorite,
           iconPath: customIconPath || undefined,
         });
       } else {
-        await window.catalog.createApp({
+        await window.urly.createApp({
           name, url: normalizedUrl, tags, favorite,
           iconPath: customIconPath || undefined,
           iconUrl: extractInfo?.iconUrl || undefined,
@@ -262,7 +262,7 @@ export default function RegisterModal({ onClose, onCreated, editApp = null, allT
             color: T.textSecondary, fontSize: 12,
           }}>
             <Icon name="folder" size={13} strokeWidth={1.6} />
-            <span>/Applications/Catalog Apps/</span>
+            <span>/Applications/Urly Apps/</span>
           </div>
         </FormField>
       </div>

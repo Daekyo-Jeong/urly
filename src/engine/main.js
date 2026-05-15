@@ -3,17 +3,17 @@ const path = require('path');
 const fs = require('fs');
 const { execFile } = require('child_process');
 
-const CATALOG_DIR = path.join(app.getPath('home'), '.catalog');
-const APPS_DIR = path.join(CATALOG_DIR, 'apps');
+const URLY_DIR = path.join(app.getPath('home'), '.urly');
+const APPS_DIR = path.join(URLY_DIR, 'apps');
 
 // Register a custom URL scheme for serving per-app icon files. Required because
-// in the dev catalog manager the renderer is loaded over http://localhost:5173
+// in the dev urly manager the renderer is loaded over http://localhost:5173
 // and Chromium refuses to load file:// resources from an http:// origin. Even
 // in the packaged renderer (loaded from file://) some browser policies still
 // reject cross-directory file:// fetches; a privileged scheme sidesteps all of
 // that. Must be called before app.whenReady().
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'catalog-icon', privileges: { standard: true, secure: true, supportFetchAPI: true, bypassCSP: true } },
+  { scheme: 'urly-icon', privileges: { standard: true, secure: true, supportFetchAPI: true, bypassCSP: true } },
 ]);
 
 // Chromium third-party storage partitioning (default-on since M115) breaks
@@ -33,7 +33,7 @@ protocol.registerSchemesAsPrivileged([
 //   5. The handler returns "Unable to process request due to missing initial
 //      state" and the user's catch shows "로그인에 실패했습니다".
 //
-// WebCatalog works because it ships an older Chromium (pre-M115) that didn't
+// WebUrly works because it ships an older Chromium (pre-M115) that didn't
 // have this feature. Modern desktop Chrome users hit the same issue on web
 // — Google's fix is to migrate the authDomain to match the app's domain
 // (Firebase Hosting custom domain), which is a site-level change we can't
@@ -63,7 +63,7 @@ function getAppIdFromArgs() {
 }
 
 // When the stub .app launches us directly (no --app-id arg), read the
-// CatalogAppID key from the parent .app's Info.plist. process.execPath points
+// UrlyAppID key from the parent .app's Info.plist. process.execPath points
 // at the stub's MacOS binary; the Info.plist is two levels up.
 function getAppIdFromBundle() {
   try {
@@ -72,7 +72,7 @@ function getAppIdFromBundle() {
     if (!fs.existsSync(plistPath)) return null;
     const plistLib = require('plist');
     const info = plistLib.parse(fs.readFileSync(plistPath, 'utf-8'));
-    return info.CatalogAppID || null;
+    return info.UrlyAppID || null;
   } catch {
     return null;
   }
@@ -312,23 +312,23 @@ function setupNotifications(win) {
 
   ipcMain.on('show-notification', (e, data) => {
     // Logs go to stderr — visible when the stub is launched from terminal:
-    //   /Applications/Catalog\ Apps/<Name>.app/Contents/MacOS/<Name>
+    //   /Applications/Urly\ Apps/<Name>.app/Contents/MacOS/<Name>
     console.log('[notification] received', JSON.stringify(data));
 
     const id = data.id || null;
     const title = data.title || app.name;
     const body = data.body || '';
-    const bundleId = `com.catalog.app.${appId}`;
+    const bundleId = `com.urly.app.${appId}`;
     const sender = e.sender;
 
     // terminal-notifier path. In packaged mode, bootstrap.js extracted it
-    // to ~/.catalog/engine/terminal-notifier.app. We canNOT derive this from
+    // to ~/.urly/engine/terminal-notifier.app. We canNOT derive this from
     // app.getAppPath() inside an SSB stub — that returns the stub's symlinked
-    // app.asar path under /Applications/Catalog Apps/<Name>.app/, not the
+    // app.asar path under /Applications/Urly Apps/<Name>.app/, not the
     // engine dir. Use the known absolute path instead. In dev, fall back to
     // the checked-in vendor copy.
     const candidates = [
-      path.join(CATALOG_DIR, 'engine', 'terminal-notifier.app', 'Contents', 'MacOS', 'terminal-notifier'),
+      path.join(URLY_DIR, 'engine', 'terminal-notifier.app', 'Contents', 'MacOS', 'terminal-notifier'),
       path.join(__dirname, '..', '..', 'vendor', 'terminal-notifier.app', 'Contents', 'MacOS', 'terminal-notifier'),
     ];
     const tnPath = candidates.find(p => fs.existsSync(p));
@@ -419,8 +419,8 @@ function setupNavigation(win) {
   win.webContents.on('dom-ready', () => {
     win.webContents.executeJavaScript(`
       (function() {
-        if (window.__catalogSwipeSetup) return;
-        window.__catalogSwipeSetup = true;
+        if (window.__urlySwipeSetup) return;
+        window.__urlySwipeSetup = true;
 
         var el = document.createElement('div');
         el.style.cssText = 'position:fixed;top:50%;width:32px;height:32px;z-index:2147483647;pointer-events:none;border-radius:50%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;transform:translateY(-50%) scale(0);transition:transform 0.15s,opacity 0.15s,background 0.1s;opacity:0;';
@@ -448,7 +448,7 @@ function setupNavigation(win) {
           el.style.transform = 'translateY(-50%) scale(0)';
         }
 
-        var bridge = window.__catalogBridge;
+        var bridge = window.__urlyBridge;
         var swiping = false;
         var peakX = 0;
 
@@ -532,7 +532,7 @@ function createWindow(config, appId) {
   // Google (and other IdPs) reject OAuth flows from "embedded browsers" via a
   // `disallowed_useragent` error when the User-Agent contains tokens like
   // "Electron/42.0.1" or our app name. Build a clean UA from the actual
-  // Chrome version Electron ships, with no Electron/Catalog markers — same
+  // Chrome version Electron ships, with no Electron/Urly markers — same
   // shape a standard Chrome on macOS sends.
   const chromeVersion = (process.versions.chrome || '126.0.0.0').split('.').slice(0, 4).join('.');
   const cleanUa = `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${chromeVersion} Safari/537.36`;
@@ -657,10 +657,10 @@ function createWindow(config, appId) {
         //   n.onclick = () => goToThread(data.threadId);
         // so we have to (a) provide an addEventListener / onclick contract,
         // (b) actually fire 'click' on the right instance when the user taps
-        // the banner. Click delivery is routed via __catalogBridge — main
+        // the banner. Click delivery is routed via __urlyBridge — main
         // process gets the click signal from terminal-notifier -wait and
         // sends 'notification-click' IPC with the same id we minted here.
-        class CatalogNotification extends EventTarget {
+        class UrlyNotification extends EventTarget {
           constructor(title, options) {
             super();
             this.title = title;
@@ -669,9 +669,9 @@ function createWindow(config, appId) {
             this.data = (options && options.data) !== undefined ? options.data : null;
             this._onclick = null;
             this._id = 'n_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
-            if (window.__catalogBridge) {
-              window.__catalogBridge.showNotification(this._id, title, this.body);
-              this._unsubscribe = window.__catalogBridge.onNotificationClick(this._id, () => {
+            if (window.__urlyBridge) {
+              window.__urlyBridge.showNotification(this._id, title, this.body);
+              this._unsubscribe = window.__urlyBridge.onNotificationClick(this._id, () => {
                 const ev = new Event('click');
                 // 'this' is the notification instance; window.focus mirrors
                 // browser behavior (browser auto-focuses tab on banner click,
@@ -697,7 +697,7 @@ function createWindow(config, appId) {
             return p;
           }
         }
-        window.Notification = CatalogNotification;
+        window.Notification = UrlyNotification;
       })();
     `);
   });
@@ -706,11 +706,11 @@ function createWindow(config, appId) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Catalog Manager — IPC handlers + window
+// Urly Manager — IPC handlers + window
 // ─────────────────────────────────────────────────────────────
-const CATALOG_INDEX = path.join(CATALOG_DIR, 'catalog.json');
-const SETTINGS_PATH = path.join(CATALOG_DIR, 'settings.json');
-const INSTALL_DIR = '/Applications/Catalog Apps';
+const URLY_INDEX = path.join(URLY_DIR, 'apps.json');
+const SETTINGS_PATH = path.join(URLY_DIR, 'settings.json');
+const INSTALL_DIR = '/Applications/Urly Apps';
 
 const DEFAULT_SETTINGS = {
   accentColor: '#FF6B35',
@@ -723,15 +723,15 @@ const DEFAULT_SETTINGS = {
   },
 };
 
-function loadCatalog() {
-  if (fs.existsSync(CATALOG_INDEX)) {
-    return JSON.parse(fs.readFileSync(CATALOG_INDEX, 'utf-8'));
+function loadUrly() {
+  if (fs.existsSync(URLY_INDEX)) {
+    return JSON.parse(fs.readFileSync(URLY_INDEX, 'utf-8'));
   }
   return { apps: [] };
 }
 
-function saveCatalog(catalog) {
-  fs.writeFileSync(CATALOG_INDEX, JSON.stringify(catalog, null, 2));
+function saveUrly(urly) {
+  fs.writeFileSync(URLY_INDEX, JSON.stringify(urly, null, 2));
 }
 
 function loadSettings() {
@@ -749,14 +749,14 @@ function loadSettings() {
 }
 
 function saveSettings(settings) {
-  fs.mkdirSync(CATALOG_DIR, { recursive: true });
+  fs.mkdirSync(URLY_DIR, { recursive: true });
   fs.writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2));
 }
 
-function setupCatalogIPC() {
+function setupUrlyIPC() {
   ipcMain.handle('apps:list', async () => {
-    const catalog = loadCatalog();
-    return catalog.apps.map(entry => {
+    const urly = loadUrly();
+    return urly.apps.map(entry => {
       const configPath = path.join(APPS_DIR, entry.appId, 'config.json');
       if (fs.existsSync(configPath)) {
         const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
@@ -765,7 +765,7 @@ function setupCatalogIPC() {
         // Stable URL the renderer can hand straight to <image href>. Cache-bust
         // via ?t={updated} so refreshed icons re-download immediately.
         const iconUrl = hasCustomIcon
-          ? `catalog-icon://app/${entry.appId}?t=${encodeURIComponent(config.updated || '')}`
+          ? `urly-icon://app/${entry.appId}?t=${encodeURIComponent(config.updated || '')}`
           : null;
         const userdataDir = path.join(APPS_DIR, entry.appId, 'userdata');
         let dataSize = 0;
@@ -834,15 +834,15 @@ function setupCatalogIPC() {
     config.favorite = favorite;
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
-    // Update catalog index
-    const catalog = loadCatalog();
-    const existing = catalog.apps.findIndex(a => a.appId === appId);
+    // Update urly index
+    const urly = loadUrly();
+    const existing = urly.apps.findIndex(a => a.appId === appId);
     if (existing >= 0) {
-      catalog.apps[existing] = { appId, name, url, updated: new Date().toISOString() };
+      urly.apps[existing] = { appId, name, url, updated: new Date().toISOString() };
     } else {
-      catalog.apps.push({ appId, name, url, created: new Date().toISOString() });
+      urly.apps.push({ appId, name, url, created: new Date().toISOString() });
     }
-    saveCatalog(catalog);
+    saveUrly(urly);
 
     return { appId, name, url, appBundle };
   });
@@ -886,14 +886,14 @@ function setupCatalogIPC() {
       });
     }
 
-    // Update catalog index
-    const catalog = loadCatalog();
-    const entry = catalog.apps.find(a => a.appId === appId);
+    // Update urly index
+    const urly = loadUrly();
+    const entry = urly.apps.find(a => a.appId === appId);
     if (entry) {
       if (patch.name) entry.name = patch.name;
       if (patch.url) entry.url = patch.url;
       entry.updated = new Date().toISOString();
-      saveCatalog(catalog);
+      saveUrly(urly);
     }
 
     return config;
@@ -1023,9 +1023,9 @@ function setupCatalogIPC() {
       if (fs.existsSync(appDir)) fs.rmSync(appDir, { recursive: true });
     }
 
-    const catalog = loadCatalog();
-    catalog.apps = catalog.apps.filter(a => a.appId !== appId);
-    saveCatalog(catalog);
+    const urly = loadUrly();
+    urly.apps = urly.apps.filter(a => a.appId !== appId);
+    saveUrly(urly);
 
     return { ok: true };
   });
@@ -1068,9 +1068,9 @@ function setupCatalogIPC() {
   });
 
   ipcMain.handle('tags:delete', async (e, tagName) => {
-    const catalog = loadCatalog();
+    const urly = loadUrly();
     let affected = 0;
-    for (const entry of catalog.apps) {
+    for (const entry of urly.apps) {
       const configPath = path.join(APPS_DIR, entry.appId, 'config.json');
       if (!fs.existsSync(configPath)) continue;
       const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
@@ -1089,9 +1089,9 @@ function setupCatalogIPC() {
   ipcMain.handle('tags:rename', async (e, oldName, newName) => {
     const newTrim = String(newName || '').trim();
     if (!newTrim || newTrim === oldName) return { ok: false, affected: 0 };
-    const catalog = loadCatalog();
+    const urly = loadUrly();
     let affected = 0;
-    for (const entry of catalog.apps) {
+    for (const entry of urly.apps) {
       const configPath = path.join(APPS_DIR, entry.appId, 'config.json');
       if (!fs.existsSync(configPath)) continue;
       const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
@@ -1137,7 +1137,7 @@ async function convertToIcns(srcPath, destPath) {
 
   // Use sips + iconutil to convert PNG → icns
   const { execSync } = require('child_process');
-  const tmpDir = path.join(require('os').tmpdir(), `catalog-icon-${Date.now()}.iconset`);
+  const tmpDir = path.join(require('os').tmpdir(), `urly-icon-${Date.now()}.iconset`);
   fs.mkdirSync(tmpDir, { recursive: true });
 
   const sizes = [16, 32, 64, 128, 256, 512];
@@ -1469,11 +1469,11 @@ function trimTransparentEdges(pngPath) {
   fs.writeFileSync(pngPath, cropped.toPNG());
 }
 
-function createCatalogWindow() {
+function createUrlyWindow() {
   const win = new BrowserWindow({
     width: 1100,
     height: 720,
-    title: 'Catalog',
+    title: 'Urly',
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 16, y: 18 },
     vibrancy: 'sidebar',
@@ -1491,10 +1491,10 @@ function createCatalogWindow() {
     win.loadFile(path.join(__dirname, '..', '..', 'dist', 'renderer', 'index.html'));
   }
 
-  // macOS-standard "Catalog" menu with Preferences (Cmd+,)
+  // macOS-standard "Urly" menu with Preferences (Cmd+,)
   const template = [
     {
-      label: 'Catalog',
+      label: 'Urly',
       submenu: [
         { role: 'about' },
         { type: 'separator' },
@@ -1543,9 +1543,9 @@ if (appId) {
 }
 
 if (!appId) {
-  // Catalog Manager mode
+  // Urly Manager mode
   app.whenReady().then(() => {
-    app.setName('Catalog');
+    app.setName('Urly');
 
     // Apply the user's saved theme to the window chrome (traffic light area,
     // sidebar vibrancy) immediately. The React renderer applies the same
@@ -1555,8 +1555,8 @@ if (!appId) {
       nativeTheme.themeSource = (s.theme || 'auto') === 'auto' ? 'system' : s.theme;
     } catch {}
 
-    // Serve `catalog-icon://app/{appId}` from the per-app icon file.
-    protocol.handle('catalog-icon', (req) => {
+    // Serve `urly-icon://app/{appId}` from the per-app icon file.
+    protocol.handle('urly-icon', (req) => {
       try {
         const u = new URL(req.url);
         const appId = u.pathname.replace(/^\/+/, '').split('/')[0] || u.hostname;
@@ -1578,20 +1578,32 @@ if (!appId) {
       }
     });
 
+    // One-shot Catalog → Urly migration. Must run BEFORE ensureEngine so that
+    // ~/.catalog/engine/ doesn't get re-extracted under the old path.
+    try {
+      const migration = require('./migration');
+      const result = migration.run();
+      if (result.migrated) {
+        console.log(`[urly] migrated from Catalog: regenerated ${result.regenerated} stub(s), cleaned ${result.oldStubsRemoved} legacy stub(s)`);
+      }
+    } catch (err) {
+      console.error('Catalog→Urly migration failed:', err.message);
+    }
+
     // First-run / post-update: extract our bundled Electron runtime to
-    // ~/.catalog/engine/ so stubs can keep running even if Catalog.app moves
+    // ~/.urly/engine/ so stubs can keep running even if Urly.app moves
     // or is deleted. No-op in dev mode.
     try {
       const { ensureEngine } = require('./bootstrap');
       const result = ensureEngine(app);
       if (result.extracted) {
-        console.log(`Catalog engine extracted → ${result.version}`);
+        console.log(`Urly engine extracted → ${result.version}`);
       }
     } catch (err) {
       console.error('Engine bootstrap failed:', err.message);
     }
-    setupCatalogIPC();
-    createCatalogWindow();
+    setupUrlyIPC();
+    createUrlyWindow();
   });
 
   app.on('window-all-closed', () => {
@@ -1600,7 +1612,7 @@ if (!appId) {
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createCatalogWindow();
+      createUrlyWindow();
     }
   });
 } else {
@@ -1609,7 +1621,7 @@ if (!appId) {
     try {
       const config = loadAppConfig(appId);
 
-      // Follow the user's Catalog-wide theme preference. 'auto' lets macOS
+      // Follow the user's Urly-wide theme preference. 'auto' lets macOS
       // decide and updates live when the OS toggles between light/dark.
       // Stubs share the same settings.json as the manager.
       try {

@@ -27,7 +27,7 @@ export default function Toast({ app, onClose, onReveal }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 600 }}>{app.name}.app created</div>
         <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.62)', marginTop: 1 }}>
-          /Applications/Catalog Apps/
+          /Applications/Urly Apps/
         </div>
       </div>
       <div onClick={onReveal} style={{

@@ -1,4 +1,4 @@
-# Catalog — Design Brief
+# Urly — Design Brief
 
 ## 프로젝트 개요
 
@@ -96,7 +96,7 @@ URL을 등록하면 독립적인 macOS 앱(.app)을 생성해주는 데스크톱
 
 ### 아이콘
 
-- 앱 자체 아이콘 (Catalog 앱의 아이콘) 디자인 필요
+- 앱 자체 아이콘 (Urly 앱의 아이콘) 디자인 필요
 - UI 내부 아이콘: SF Symbols 사용 (macOS 네이티브 일관성)
 
 ### 레이아웃
@@ -109,7 +109,7 @@ URL을 등록하면 독립적인 macOS 앱(.app)을 생성해주는 데스크톱
 
 ## 레퍼런스
 
-- **WebCatalog**: 가장 직접적인 경쟁 참고. 그리드형 앱 목록, 검색 기능
+- **WebUrly**: 가장 직접적인 경쟁 참고. 그리드형 앱 목록, 검색 기능
 - **macOS Launchpad**: 앱 그리드 배치의 시스템 레퍼런스
 - **Raycast**: 유틸리티 앱의 깔끔한 UI 참고
 - **Arc Browser Boost**: 사이트별 커스터마이징 UI 참고

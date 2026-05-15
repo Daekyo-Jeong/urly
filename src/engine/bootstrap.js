@@ -1,8 +1,8 @@
-// First-run bootstrap: when Catalog.app launches for the first time (or after
+// First-run bootstrap: when Urly.app launches for the first time (or after
 // being updated to a newer Electron version), extract its bundled Electron
-// runtime and asar to ~/.catalog/engine/ so that the lightweight stubs
-// generated under /Applications/Catalog Apps/ can keep running even if the
-// user deletes or moves the parent Catalog.app.
+// runtime and asar to ~/.urly/engine/ so that the lightweight stubs
+// generated under /Applications/Urly Apps/ can keep running even if the
+// user deletes or moves the parent Urly.app.
 //
 // In dev mode (running via `electron .` with no .app bundle), this is a no-op
 // — the generator falls back to node_modules/electron.
@@ -13,7 +13,7 @@ const os = require('os');
 const { execFileSync } = require('child_process');
 
 const HOME = os.homedir();
-const ENGINE_DIR = path.join(HOME, '.catalog', 'engine');
+const ENGINE_DIR = path.join(HOME, '.urly', 'engine');
 const VERSION_FILE = path.join(ENGINE_DIR, 'version.txt');
 
 // True when running inside a packaged .app (process.resourcesPath ends in
@@ -22,11 +22,11 @@ function isPackaged(app) {
   return app.isPackaged === true;
 }
 
-// Locate Catalog.app's bundle from process.execPath:
-//   /Applications/Catalog.app/Contents/MacOS/Catalog
-// → /Applications/Catalog.app
-function getCatalogBundle() {
-  // process.execPath = .../Catalog.app/Contents/MacOS/Catalog
+// Locate Urly.app's bundle from process.execPath:
+//   /Applications/Urly.app/Contents/MacOS/Urly
+// → /Applications/Urly.app
+function getUrlyBundle() {
+  // process.execPath = .../Urly.app/Contents/MacOS/Urly
   return path.dirname(path.dirname(path.dirname(process.execPath)));
 }
 
@@ -44,17 +44,17 @@ function getRuntimeVersion(app) {
   // be considered "already installed" and `ensureEngine()` would skip
   // re-extraction, leaving stubs pointing at stale engine code. With the
   // mtime, every fresh build forces a fresh extraction.
-  const catalogBundle = getCatalogBundle();
-  const asarSrc = path.join(catalogBundle, 'Contents', 'Resources', 'app.asar');
+  const urlyBundle = getUrlyBundle();
+  const asarSrc = path.join(urlyBundle, 'Contents', 'Resources', 'app.asar');
   let mtime = 0;
   try { mtime = Math.floor(fs.statSync(asarSrc).mtimeMs); } catch {}
   return `${app.getVersion()}-electron-${process.versions.electron}-${mtime}`;
 }
 
-// Extract Catalog.app's runtime to ~/.catalog/engine/. Idempotent.
+// Extract Urly.app's runtime to ~/.urly/engine/. Idempotent.
 function extractEngine(app) {
-  const catalogBundle = getCatalogBundle();
-  const contentsDir = path.join(catalogBundle, 'Contents');
+  const urlyBundle = getUrlyBundle();
+  const contentsDir = path.join(urlyBundle, 'Contents');
   const frameworksSrc = path.join(contentsDir, 'Frameworks');
   const binarySrc = path.join(contentsDir, 'MacOS', path.basename(process.execPath));
   const asarSrc = path.join(contentsDir, 'Resources', 'app.asar');
@@ -75,12 +75,12 @@ function extractEngine(app) {
   fs.mkdirSync(engineMacOS, { recursive: true });
   fs.mkdirSync(engineFrameworks, { recursive: true });
 
-  // 1. Electron binary (the executable inside Catalog.app's MacOS/). We give
+  // 1. Electron binary (the executable inside Urly.app's MacOS/). We give
   //    it the canonical name `Electron` so the generator can find it by path.
   execFileSync('cp', ['-c', binarySrc, path.join(engineMacOS, 'Electron')]);
 
   // 2. Frameworks — clone each entry. This is the big one (~150–300MB on
-  //    paper); APFS shares the underlying blocks with Catalog.app so actual
+  //    paper); APFS shares the underlying blocks with Urly.app so actual
   //    disk delta is near zero.
   for (const entry of fs.readdirSync(frameworksSrc)) {
     execFileSync('cp', ['-cR', path.join(frameworksSrc, entry), path.join(engineFrameworks, entry)]);
@@ -97,9 +97,9 @@ function extractEngine(app) {
   // 4. terminal-notifier — bundled helper that owns its own UNUserNotification
   //    permission (ad-hoc signed, stable bundle id fr.julienxx.oss.terminal-notifier).
   //    Ad-hoc signed stubs can't be granted notification permission by macOS,
-  //    so we shell out to this helper with `-sender com.catalog.app.<appId>`
+  //    so we shell out to this helper with `-sender com.urly.app.<appId>`
   //    which makes the banner appear with the stub's icon and click-activate
-  //    the stub. The .app is bundled inside Catalog.app's Resources via
+  //    the stub. The .app is bundled inside Urly.app's Resources via
   //    electron-builder extraResources.
   const tnSrc = path.join(contentsDir, 'Resources', 'terminal-notifier.app');
   if (fs.existsSync(tnSrc)) {
@@ -109,8 +109,8 @@ function extractEngine(app) {
   fs.writeFileSync(VERSION_FILE, getRuntimeVersion(app));
 }
 
-// Public: ensure ~/.catalog/engine/ matches the running Catalog.app's runtime.
-// Call this once on app.whenReady() in the catalog manager mode.
+// Public: ensure ~/.urly/engine/ matches the running Urly.app's runtime.
+// Call this once on app.whenReady() in the urly manager mode.
 function ensureEngine(app) {
   if (!isPackaged(app)) return { skipped: 'dev' };
   const want = getRuntimeVersion(app);

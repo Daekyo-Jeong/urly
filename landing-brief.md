@@ -1,30 +1,30 @@
-# Catalog — Landing Page Design Brief
+# Urly — Landing Page Design Brief
 
-A single-page download/marketing site for Catalog, a macOS utility that turns any URL into a standalone `.app`. The deliverable is an HTML/CSS/JS prototype (Claude Design's native format).
+A single-page download/marketing site for Urly, a macOS utility that turns any URL into a standalone `.app`. The deliverable is an HTML/CSS/JS prototype (Claude Design's native format).
 
-## What Catalog is, in one sentence
+## What Urly is, in one sentence
 
-Catalog turns any website into a real macOS app — searchable in Spotlight, dockable, with its own cookies, like Slack or Linear ships theirs, but for everything you use in a browser tab.
+Urly turns any website into a real macOS app — searchable in Spotlight, dockable, with its own cookies, like Slack or Linear ships theirs, but for everything you use in a browser tab.
 
 ## The single message
 
 **Add a URL → get a `.app`.**
 
-Everything on the page should reinforce that one promise. The reader should walk away understanding that they can take, say, `notion.so`, paste it into Catalog, and a few seconds later have `Notion.app` in their Dock that looks and acts like a first-party native app — without the company having shipped one.
+Everything on the page should reinforce that one promise. The reader should walk away understanding that they can take, say, `notion.so`, paste it into Urly, and a few seconds later have `Notion.app` in their Dock that looks and acts like a first-party native app — without the company having shipped one.
 
 ## Required sections (in vertical order)
 
 ### 1. Hero — the only section that absolutely must work
 
-- Catalog's brand mark (the orange gradient squircle with the 4-tile grid — same one used in the app's sidebar). Roughly 96–112px, with a soft shadow.
-- Wordmark "Catalog" — large, tight letter-spacing, SF-style display weight.
+- Urly's brand mark (the orange gradient squircle with the 4-tile grid — same one used in the app's sidebar). Roughly 96–112px, with a soft shadow.
+- Wordmark "Urly" — large, tight letter-spacing, SF-style display weight.
 - Tagline: *"Turn any URL into a macOS app."*
 - One short supporting line: *"Spotlight-searchable. Dockable. Sessions don't bleed across sites. Free, personal use."*
 - A single, very prominent primary CTA button:
   - Label: **Download for macOS** with a small chevron / down-arrow.
   - Sublabel underneath, smaller: `v0.1.0 · Apple Silicon · macOS 12+`
   - The button links to the DMG download URL. **Treat this as the most important pixel on the page** — make it impossible to miss.
-- Secondary link in muted text: *"View on GitHub →"* linking to `github.com/Daekyo-Jeong/catalog`.
+- Secondary link in muted text: *"View on GitHub →"* linking to `github.com/Daekyo-Jeong/urly`.
 
 ### 2. The "before / after" demonstration
 
@@ -51,14 +51,14 @@ Six small cards, each a single icon + 2-line headline + 1-line description. Tigh
 Just three illustrated steps. Each step: a small mockup of the relevant UI from the actual app + a one-line caption.
 
 1. **Paste a URL.** Show the New App modal in its empty state.
-2. **Catalog grabs the title and icon.** Show the same modal mid-extraction with the spinner / found-icon checkmark.
+2. **Urly grabs the title and icon.** Show the same modal mid-extraction with the spinner / found-icon checkmark.
 3. **Launch from Spotlight.** Show the Spotlight bar with the new app as the top hit.
 
 ### 5. Architecture note (optional, small)
 
 A single short paragraph, gray text, near the bottom. For the technically curious:
 
-*"Catalog is a hybrid of one shared Electron runtime and per-URL stub `.app` bundles. Each stub is ~33KB on disk thanks to APFS copy-on-write — so 50 apps cost the same as 1. Open source, MIT, personal use."*
+*"Urly is a hybrid of one shared Electron runtime and per-URL stub `.app` bundles. Each stub is ~33KB on disk thanks to APFS copy-on-write — so 50 apps cost the same as 1. Open source, MIT, personal use."*
 
 ### 6. Footer
 
@@ -93,7 +93,7 @@ Both light and dark, auto-respecting the system via `prefers-color-scheme`. No t
   - Secondary: `rgba(255,255,255,0.60)`
   - Tertiary: `rgba(255,255,255,0.36)`
 - **Accent stays `#FF6B35`** in dark mode — it sits well on near-black. Don't reach for a brighter tint.
-- **The app's own UI mockups stay light in both modes.** Catalog itself is a light-only app right now; rendering its windows in dark on the dark page would misrepresent the product. Treat the embedded app window the same way macOS treats a light-themed app: it sits as a light "panel" inside the dark page chrome, with a soft shadow to ground it. That visual contrast is actually a feature, not a bug.
+- **The app's own UI mockups stay light in both modes.** Urly itself is a light-only app right now; rendering its windows in dark on the dark page would misrepresent the product. Treat the embedded app window the same way macOS treats a light-themed app: it sits as a light "panel" inside the dark page chrome, with a soft shadow to ground it. That visual contrast is actually a feature, not a bug.
 - **The brand icon** — keep the orange gradient + white tiles in both modes. Drop the inner hairline border in dark mode (it disappears anyway).
 - **The squircle outline** (`stroke="rgba(0,0,0,0.10)"` in light) should flip to `rgba(255,255,255,0.10)` in dark.
 
@@ -101,19 +101,19 @@ Both light and dark, auto-respecting the system via `prefers-color-scheme`. No t
 
 These are real and should appear verbatim:
 
-- Product name: **Catalog**
+- Product name: **Urly**
 - Tagline options (pick one, or propose another in this register): *"Turn any URL into a macOS app." / "Any URL, a real app." / "Apps from URLs, the macOS way."*
 - Version: **v0.1.0**
 - Platform requirement: **Apple Silicon, macOS 12 or newer**
-- GitHub: `https://github.com/Daekyo-Jeong/catalog`
+- GitHub: `https://github.com/Daekyo-Jeong/urly`
 - License/use: free for personal use
-- Download artifact: `Catalog-0.1.0-arm64.dmg` (~112MB)
+- Download artifact: `Urly-0.1.0-arm64.dmg` (~112MB)
 
 ## What we're NOT doing
 
 - No pricing section. It's free.
 - No testimonials section. We don't have any.
-- No comparison table (vs. WebCatalog etc.). Stays positive.
+- No comparison table (vs. WebUrly etc.). Stays positive.
 - No email capture / newsletter.
 - No "Made with Electron" / "Powered by" badges.
 - No animation-heavy hero. No video. Static is fine — even preferred.

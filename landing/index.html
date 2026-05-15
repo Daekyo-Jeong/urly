@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Catalog — Turn any URL into a macOS app</title>
-<meta name="description" content="Catalog turns any website into a real macOS app — Spotlight-searchable, dockable, with its own cookies. Free for personal use." />
+<title>Urly — Turn any URL into a macOS app</title>
+<meta name="description" content="Urly turns any website into a real macOS app — Spotlight-searchable, dockable, with its own cookies. Free for personal use." />
 <meta property="og:type" content="website" />
-<meta property="og:url" content="https://catalog.dkdk.me/" />
-<meta property="og:title" content="Catalog — Turn any URL into a macOS app" />
+<meta property="og:url" content="https://urly.dkdk.me/" />
+<meta property="og:title" content="Urly — Turn any URL into a macOS app" />
 <meta property="og:description" content="Spotlight-searchable. Dockable. Sessions don't bleed across sites. Free, personal use." />
-<meta property="og:image" content="https://catalog.dkdk.me/og-cover.png" />
+<meta property="og:image" content="https://urly.dkdk.me/og-cover.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="Catalog — Turn any URL into a macOS app" />
+<meta property="og:image:alt" content="Urly — Turn any URL into a macOS app" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Catalog — Turn any URL into a macOS app" />
+<meta name="twitter:title" content="Urly — Turn any URL into a macOS app" />
 <meta name="twitter:description" content="Spotlight-searchable. Dockable. Sessions don't bleed across sites. Free, personal use." />
-<meta name="twitter:image" content="https://catalog.dkdk.me/og-cover.png" />
+<meta name="twitter:image" content="https://urly.dkdk.me/og-cover.png" />
 
 <style>
   :root { color-scheme: light; }
@@ -172,9 +172,9 @@ const LP = {
   maxW: 960,
 };
 
-const INSTALL_CMD = 'curl -fsSL https://raw.githubusercontent.com/Daekyo-Jeong/catalog/main/install.sh | bash';
-const DMG_URL = 'https://github.com/Daekyo-Jeong/catalog/releases/download/v0.1.0/Catalog-0.1.0-arm64.dmg';
-const REPO_URL = 'https://github.com/Daekyo-Jeong/catalog';
+const INSTALL_CMD = 'curl -fsSL https://raw.githubusercontent.com/Daekyo-Jeong/urly/main/install.sh | bash';
+const DMG_URL = 'https://github.com/Daekyo-Jeong/urly/releases/download/v0.1.0/Urly-0.1.0-arm64.dmg';
+const REPO_URL = 'https://github.com/Daekyo-Jeong/urly';
 
 function useCopy(text) {
   const [copied, setCopied] = React.useState(false);
@@ -224,8 +224,8 @@ function Squircle({ size = 64, bg = '#000', children, style = {}, shadow = true 
   );
 }
 
-// ─── Catalog brand icon ───────────────────────────────────────────────────────
-function CatalogIcon({ size = 64 }) {
+// ─── Urly brand icon ───────────────────────────────────────────────────────
+function UrlyIcon({ size = 64 }) {
   const gid = React.useId();
   return (
     <div style={{
@@ -729,14 +729,14 @@ function Section({ children, pad = '120px 32px', style = {} }) {
 function Hero() {
   return (
     <section style={{ padding: '120px 32px 96px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <CatalogIcon size={108} />
+      <UrlyIcon size={108} />
 
       <h1 className="hero-title" style={{
         margin: '40px 0 0',
         fontSize: 88, fontWeight: 700, color: LP.text,
         letterSpacing: -3.8, lineHeight: 1,
         fontFamily: LP.font,
-      }}>Catalog</h1>
+      }}>Urly</h1>
 
       <p style={{
         margin: '24px 0 0',
@@ -852,8 +852,8 @@ const STEPS = [
     mock: 'paste',
   },
   {
-    title: 'Catalog grabs the title and icon.',
-    body: 'Catalog reads the page\'s metadata — apple-touch-icon, PWA manifest, OpenGraph title — and shows you what it found.',
+    title: 'Urly grabs the title and icon.',
+    body: 'Urly reads the page\'s metadata — apple-touch-icon, PWA manifest, OpenGraph title — and shows you what it found.',
     mock: 'extract',
   },
   {
@@ -930,7 +930,7 @@ function ArchNote() {
           margin: 0, fontSize: 14, color: LP.text2, lineHeight: 1.65,
           fontFamily: T.fontMono, letterSpacing: 0.1, textWrap: 'pretty',
         }}>
-          Catalog is a hybrid of one shared Electron runtime and per-URL stub{' '}
+          Urly is a hybrid of one shared Electron runtime and per-URL stub{' '}
           <span style={{ color: LP.text, fontWeight: 600 }}>.app</span>{' '}
           bundles. Each stub is ~33KB on disk thanks to APFS copy-on-write — so 50 apps cost the same as 1.
           Open source, MIT, personal use.
@@ -946,7 +946,7 @@ function Footer() {
     <footer style={{ padding: '64px 32px 80px', borderTop: `0.5px solid ${LP.sep}`, textAlign: 'center' }}>
       <div style={{ maxWidth: LP.maxW, margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <CatalogIcon size={56} />
+          <UrlyIcon size={56} />
         </div>
 
         <div style={{ marginTop: 28, display: 'flex', justifyContent: 'center' }}>
@@ -966,7 +966,7 @@ function Footer() {
           <span>MIT, free for personal use</span>
         </div>
 
-        <div style={{ marginTop: 28, fontSize: 12, color: LP.text3 }}>© 2026 Catalog</div>
+        <div style={{ marginTop: 28, fontSize: 12, color: LP.text3 }}>© 2026 Urly</div>
       </div>
     </footer>
   );

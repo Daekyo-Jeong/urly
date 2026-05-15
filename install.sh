@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
-# Catalog one-line installer.
+# Urly one-line installer.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/Daekyo-Jeong/catalog/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Daekyo-Jeong/urly/main/install.sh | bash
 #
 # What it does:
 #   1. Verifies macOS + Apple Silicon
 #   2. Downloads the latest DMG from GitHub Releases
-#   3. Mounts it, copies Catalog.app to /Applications via ditto
+#   3. Mounts it, copies Urly.app to /Applications via ditto
 #   4. Strips com.apple.quarantine so Gatekeeper doesn't block first launch
-#   5. Detaches the DMG cleanly, then opens Catalog
+#   5. Detaches the DMG cleanly, then opens Urly
 #
 # Plain ASCII only (no curly quotes, no ellipsis) so the script survives any
 # transcoding step between curl and bash.
 
 set -eo pipefail
 
-REPO="Daekyo-Jeong/catalog"
-APP_NAME="Catalog.app"
+REPO="Daekyo-Jeong/urly"
+APP_NAME="Urly.app"
 INSTALL_DIR="/Applications"
 TMP=""
 MOUNT_POINT=""
@@ -53,7 +53,7 @@ if [ "$ARCH" != "arm64" ]; then
 fi
 
 # Resolve the latest release's DMG URL
-say "Looking up latest Catalog release..."
+say "Looking up latest Urly release..."
 API="https://api.github.com/repos/${REPO}/releases/latest"
 ASSET_URL="$(curl -fsSL "$API" \
   | grep -E '"browser_download_url".*\.dmg"' \
@@ -70,7 +70,7 @@ DMG_NAME="$(basename "$ASSET_URL")"
 note "Found: $DMG_NAME"
 
 # Download
-TMP="$(mktemp -d -t catalog-install)"
+TMP="$(mktemp -d -t urly-install)"
 say "Downloading..."
 curl -fL --progress-bar "$ASSET_URL" -o "$TMP/$DMG_NAME"
 
@@ -88,7 +88,7 @@ if [ ! -d "$SRC" ]; then
   exit 1
 fi
 
-# Replace any existing install (userdata at ~/.catalog is preserved separately)
+# Replace any existing install (userdata at ~/.urly is preserved separately)
 if [ -d "$DEST" ]; then
   note "Replacing existing $DEST"
   rm -rf "$DEST"
@@ -105,12 +105,12 @@ say "Installing to $INSTALL_DIR ..."
 MOUNT_POINT=""
 
 # Strip Gatekeeper quarantine so the unsigned bundle launches without the
-# "Catalog is damaged" warning.
+# "Urly is damaged" warning.
 say "Clearing quarantine attribute..."
 /usr/bin/xattr -cr "$DEST"
 
-ok "Catalog installed at $DEST"
+ok "Urly installed at $DEST"
 echo ""
-say "Launching Catalog..."
+say "Launching Urly..."
 /usr/bin/open "$DEST"
 ok "Done."

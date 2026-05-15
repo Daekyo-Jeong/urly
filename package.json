@@ -1,6 +1,6 @@
 {
-  "name": "catalog",
-  "version": "0.1.1",
+  "name": "urly",
+  "version": "0.2.0",
   "description": "Site-Specific Browser Generator for macOS",
   "main": "src/engine/main.js",
   "scripts": {
@@ -29,9 +29,9 @@
     "react-dom": "^19.2.6"
   },
   "build": {
-    "appId": "app.catalog.manager",
-    "productName": "Catalog",
-    "copyright": "Catalog — personal use",
+    "appId": "app.urly.manager",
+    "productName": "Urly",
+    "copyright": "Urly — personal use",
     "directories": {
       "output": "dist/build"
     },
@@ -70,7 +70,7 @@
       ]
     },
     "dmg": {
-      "title": "Catalog ${version}",
+      "title": "Urly ${version}",
       "backgroundColor": "#ffffff",
       "icon": null,
       "iconSize": 100,

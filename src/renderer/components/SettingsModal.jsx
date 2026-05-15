@@ -177,7 +177,7 @@ export default function SettingsModal({ settings, onClose, onChange, tagsWithCou
                           if (e.key === 'Enter') {
                             const next = renameDraft.trim();
                             if (next && next !== tag) {
-                              await window.catalog.renameTag(tag, next);
+                              await window.urly.renameTag(tag, next);
                               onTagsChanged?.();
                             }
                             setRenamingTag(null);
@@ -220,7 +220,7 @@ export default function SettingsModal({ settings, onClose, onChange, tagsWithCou
                               `Delete tag "${tag}"?\n\nThis will remove the tag from ${count} ${count === 1 ? 'app' : 'apps'}. The apps themselves will not be deleted.`
                             );
                             if (!ok) return;
-                            await window.catalog.deleteTag(tag);
+                            await window.urly.deleteTag(tag);
                             onTagsChanged?.();
                           }}
                           title="Delete tag"

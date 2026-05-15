@@ -1,4 +1,4 @@
-# Catalog — Site-Specific Browser Generator for macOS
+# Urly — Site-Specific Browser Generator for macOS
 
 ## 개요
 
@@ -10,18 +10,18 @@ URL을 등록하면 독립적인 macOS 앱(.app)을 생성하는 도구.
 ### 하이브리드 구조 (공유 런타임 + stub .app)
 
 ```
-~/.catalog/
+~/.urly/
 ├── engine/                    # 공유 Electron 런타임 (~200MB, 1벌)
-│   ├── Catalog Engine.app/    # Electron 바이너리
+│   ├── Urly Engine.app/    # Electron 바이너리
 │   └── version.txt
 ├── apps/                      # 앱별 설정·데이터
 │   └── {app-id}/
 │       ├── config.json        # name, url, icon, created, updated
 │       ├── icon.icns          # 앱 아이콘
 │       └── userdata/          # Chromium 프로필 (쿠키·세션 격리)
-└── catalog.json               # 등록된 앱 목록 인덱스
+└── apps.json               # 등록된 앱 목록 인덱스
 
-/Applications/Catalog Apps/
+/Applications/Urly Apps/
 ├── Slack.app                  # stub .app (~1MB)
 ├── Gmail.app
 └── Figma.app
@@ -44,9 +44,9 @@ Slack.app/
 **launcher 스크립트 동작:**
 ```bash
 #!/bin/bash
-exec "$HOME/.catalog/engine/Catalog Engine.app/Contents/MacOS/Catalog Engine" \
+exec "$HOME/.urly/engine/Urly Engine.app/Contents/MacOS/Urly Engine" \
   --app-id="slack" \
-  --user-data-dir="$HOME/.catalog/apps/slack/userdata"
+  --user-data-dir="$HOME/.urly/apps/slack/userdata"
 ```
 
 ### 데이터 격리
@@ -67,7 +67,7 @@ exec "$HOME/.catalog/engine/Catalog Engine.app/Contents/MacOS/Catalog Engine" \
 - 아이콘 설정:
   - 자동: URL에서 apple-touch-icon → favicon 순으로 추출
   - 수동: 사용자가 이미지 파일 선택 (png/jpg/svg → icns 변환)
-- "생성" 버튼 → stub .app 생성 → /Applications/Catalog Apps/ 에 배치
+- "생성" 버튼 → stub .app 생성 → /Applications/Urly Apps/ 에 배치
 
 #### 앱 수정
 - 이름 변경 → Info.plist 업데이트, .app 폴더명 변경
@@ -120,7 +120,7 @@ exec "$HOME/.catalog/engine/Catalog Engine.app/Contents/MacOS/Catalog Engine" \
 | stub .app 생성 | Node.js (fs로 .app 번들 구성, plist 라이브러리로 Info.plist 생성) |
 | 아이콘 변환 | png2icons 또는 iconutil (macOS 내장) |
 | 아이콘 자동 추출 | node-fetch로 HTML 파싱 → apple-touch-icon/favicon URL 추출 |
-| 설정 저장 | JSON 파일 (catalog.json, config.json) |
+| 설정 저장 | JSON 파일 (apps.json, config.json) |
 
 ## 외부 링크 처리 정책
 
@@ -133,7 +133,7 @@ exec "$HOME/.catalog/engine/Catalog Engine.app/Contents/MacOS/Catalog Engine" \
 
 ## Finder 검색 보장
 
-- .app 번들을 `/Applications/Catalog Apps/`에 배치
+- .app 번들을 `/Applications/Urly Apps/`에 배치
 - Info.plist에 `CFBundleName`, `CFBundleDisplayName` 정확히 설정
 - Spotlight 인덱싱 자동 (별도 작업 불필요 — .app은 기본적으로 인덱싱됨)
 - 아이콘 변경 시 `touch` + Finder 캐시 리셋으로 즉시 반영

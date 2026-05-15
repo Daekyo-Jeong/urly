@@ -97,7 +97,7 @@ export function AppMark({ app, size = 64, shadow = true }) {
   );
 }
 
-export function CatalogIcon({ size = 64 }) {
+export function UrlyIcon({ size = 64 }) {
   const id = useId();
   // 4-tile grid sized off the full tile — matches the Figma source (tiles at
   // 226–798 of the 1024 canvas → ~28%-78% of the icon body).
